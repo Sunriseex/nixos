@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 {
   # Enable sound with pipewire
@@ -10,6 +10,6 @@
     pulse.enable = true;
     # bluez.enable = true;
   };
- 
+
   hardware.bluetooth.enable = true;
 }

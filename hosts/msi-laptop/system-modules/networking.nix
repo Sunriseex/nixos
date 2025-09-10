@@ -1,4 +1,4 @@
-{ config, ... }:
+{ ... }:
 
 {
   networking.hostName = "snrx-pc"; # Define your hostname.
