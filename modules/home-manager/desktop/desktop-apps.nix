@@ -5,17 +5,20 @@
 
   home.packages = with pkgs; [
     obsidian
-    discord
     spotify
     gimp
     qimgv # Image viewer
     pavucontrol
     libreoffice
-    bitwarden-desktop
+    keepassxc
+    telegram-desktop
     blueman
     kdePackages.kdenlive # Editing software
     obs-studio
     godot
+    v2rayn
+    xray
+    vscode
     aseprite
     freecad
     synology-drive-client
@@ -26,6 +29,8 @@
     textpieces # Text processing utility
     identity # Image and videos comparison tool
     piper # Mouse configuration app
+    bluez
+    bluez-tools
   ];
 
  services.flatpak.packages = [

@@ -8,7 +8,7 @@
   home = { 
     username = "snrx";
     homeDirectory = "/home/snrx";
-    stateVersion = "25.05"; # Do not change
+    stateVersion = "25.11"; # Do not change
   };
 
   home.packages = with pkgs; [
@@ -17,8 +17,8 @@
 
   home.sessionVariables = {
     TERMINAL = "kitty";
-    EDITOR = "code --wait";
-    VISUAL = "code --wait";
+    EDITOR = "nvim";
+    VISUAL = "nvim";
     HYPRSHOT_DIR = /home/snrx/Screenshots;
   };
 

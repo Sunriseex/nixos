@@ -13,7 +13,7 @@
 
         modules-left = [ "custom/info" "cpu" "memory" ];
         modules-center = [ "hyprland/workspaces" ];
-        modules-right = [ "network" "battery" "bluetooth" "pulseaudio" "clock" "custom/lock" "custom/power" ];
+        modules-right = [ "tray" "network" "pulseaudio" "clock" "custom/lock" "custom/power" ];
     
         "custom/info" = {
           format = "     ";
@@ -103,7 +103,7 @@
        
         clock = {
           interval = 1;
-          timezone = "Europe/Rome";
+          timezone = "Europe/Moscow";
           format = "<span color='#dcdfe1'>  </span> {:%H:%M} ";
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
@@ -125,17 +125,7 @@
             "<span color='#FFD700'> 󰃠 </span>"
           ];
         };
-     
-        bluetooth = {
-          on-click = "blueman-manager";
-          format = "<span color='#00BFFF'>  </span>{status} ";
-          format-connected = "<span color='#00BFFF'>  </span>{device_alias} ";
-          format-connected-battery = "<span color='#00BFFF'>  </span>{device_alias} {device_battery_percentage}% ";
-          tooltip-format = "{controller_alias}\t{controller_address}\n\n{num_connections} connected";
-          tooltip-format-connected = "{controller_alias}\t{controller_address}\n\n{num_connections} connected\n\n{device_enumerate}";
-          tooltip-format-enumerate-connected = "{device_alias}\t{device_address}";
-          tooltip-format-enumerate-connected-battery = "{device_alias}\t{device_address}\t{device_battery_percentage}%";
-        };
+            
       };
     };
 
@@ -197,7 +187,6 @@
       }
       
       #custom-reboot,
-      #bluetooth,
       #battery,
       #pulseaudio,
       #backlight,
@@ -218,7 +207,6 @@
         padding-top: 0;
       }
       
-      #bluetooth:hover,
       #network:hover,
       /*#tray:hover,*/
       #backlight:hover,

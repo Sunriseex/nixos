@@ -23,10 +23,8 @@
       #monitor = <name>, <resolution@refresh_rate>, <position>
       monitor = [ 
         
-        "DVI-D-1, 1920x1080@60.01Hz, -1920x0, 1" # PC Monitor
-        "HDMI-A-1, 1920x1080@144.00Hz, 0x0, 1" # ASUS monitor
-
-        #"HDMI-A-1, 2560x1440@59.95Hz, 0x2160, 1.6" # Philips TV
+        "DVI-D-1, 1920x1080@60.01Hz, -1920x0, 1"
+        "HDMI-A-1, 1920x1080@165.00Hz, 0x0, 1" 
       ];
 
       workspace = [ 
@@ -46,6 +44,7 @@
       ### MY PROGRAMS
       "$terminal" = "kitty";
       "$browser" = "firefox";
+      "$editor" = "code .";
       "$fileManager" = "nemo";
       "$menu" = "rofi -show drun";
 
@@ -164,9 +163,10 @@
       "$mainMod" = "SUPER";
 
       bind = [ 
-        "$mainMod, D, exec, $terminal"
-        "$mainMod, S, exec, $browser "
-        "$mainMod, C, killactive,"
+        "$mainMod, RETURN, exec, $terminal"
+        "$mainMod, V, exec, $editor"
+        "$mainMod, B, exec, $browser "
+        "$mainMod, Q, killactive,"
         "$mainMod, M, exit,"
         "$mainMod, E, exec, $fileManager"
         "$mainMod, V, togglefloating,"

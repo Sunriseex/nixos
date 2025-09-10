@@ -45,6 +45,16 @@
           nix-flatpak.nixosModules.nix-flatpak
         ];
       };
-    }; 
-  };
+     desktop-pc = nixpkgs.lib.nixosSystem {
+	specialArgs = {inherit inputs;};
+	modules = [
+	./hosts/desktop-pc/configuration.nix
+	home-manager.nixosModules.default
+		nvf.nixosModules.default
+	sddm-sugar-candy-nix.nixosModules.default
+	nix-flatpak.nixosModules.nix-flatpak
+	];
+     }; 
+   };
+ };
 }

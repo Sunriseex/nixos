@@ -8,5 +8,8 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+    # bluez.enable = true;
   };
+ 
+  hardware.bluetooth.enable = true;
 }
