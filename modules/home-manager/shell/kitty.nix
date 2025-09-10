@@ -4,12 +4,12 @@
   programs.kitty = {
     enable = true;
     font = {
-      package = pkgs.nerd-fonts.caskaydia-cove;
-      name = "CaskaydiaCove Nerd Font Mono";
+      package = pkgs.nerd-fonts.fira-code;
+      name = "FiraCode Nerd Font Mono";
       size = 14;
-    };    
+    };
 
-    shellIntegration.enableBashIntegration = true;
+    shellIntegration.enableZshIntegration = true;
     themeFile = "SpaceGray";
 
     settings = {

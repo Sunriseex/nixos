@@ -1,4 +1,9 @@
-{ config, pkgs, inputs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
   imports = [ inputs.nix-flatpak.homeManagerModules.nix-flatpak ];
@@ -31,10 +36,14 @@
     piper # Mouse configuration app
     bluez
     bluez-tools
+
   ];
 
- services.flatpak.packages = [
-    { appId = "com.github.d4nj1.tlpui"; origin = "flathub";  }
+  services.flatpak.packages = [
+    {
+      appId = "com.github.d4nj1.tlpui";
+      origin = "flathub";
+    }
   ];
 
 }

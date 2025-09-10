@@ -1,23 +1,24 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
-let 
+let
   nord9 = "#81A1C1";
   nord10 = "#5E81AC";
   nord11 = "#BF616A";
   nord13 = "#EBCB8B";
   nord14 = "#A3BE8C";
 
-in {
+in
+{
   programs.fastfetch = {
     enable = true;
     package = pkgs.fastfetch;
     settings = {
       "$schema" = "https:#github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json";
-    
+
       logo = {
         source = "nixos";
-        height = 15;
-        width = 30;
+        height = 5;
+        width = 10;
         padding = {
           top = 10;
           left = 3;
@@ -45,7 +46,7 @@ in {
           type = "gpu";
           key = "│ ├󰍛";
           keyColor = nord14;
-        } 
+        }
         {
           type = "memory";
           key = "│ ├󰍛";
@@ -106,7 +107,7 @@ in {
           type = "packages";
           key = "└ └󰏖";
           keyColor = nord13;
-        }  
+        }
         "break"
         {
           type = "de";
@@ -122,7 +123,7 @@ in {
           type = "lm";
           key = "│ ├";
           keyColor = nord9;
-        }  
+        }
         {
           type = "terminal";
           key = "│ ├";
@@ -132,7 +133,7 @@ in {
           type = "shell";
           key = "└ └";
           keyColor = nord9;
-        } 
+        }
         {
           type = "custom";
           format = "└────────────────────────────────────────────────────┘";
@@ -142,7 +143,7 @@ in {
           type = "custom";
           format = "┌───────────────────────Themes───────────────────────┐";
         }
-        
+
         {
           type = "theme";
           key = "󰉼 Theme";
@@ -198,7 +199,7 @@ in {
           format = "└────────────────────────────────────────────────────┘";
         }
         "break"
-	    ];
+      ];
     };
   };
 }

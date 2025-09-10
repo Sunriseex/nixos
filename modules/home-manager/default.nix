@@ -1,12 +1,13 @@
 {
   imports = [
-    # Shell 
-    ./shell/bash.nix
+    # Shell
+    # ./shell/bash.nix
     ./shell/cli-tools.nix
     ./shell/fastfetch.nix
     ./shell/git.nix
     ./shell/kitty.nix
     ./shell/starship.nix
+    ./shell/shell.nix
     # Desktop
     ./desktop/desktop-apps.nix
     ./desktop/hypridle.nix
@@ -22,5 +23,6 @@
     # Apps
     ./apps/firefox.nix
     ./apps/librewolf.nix
+    # ./apps/home-assistant.nix
   ];
 }

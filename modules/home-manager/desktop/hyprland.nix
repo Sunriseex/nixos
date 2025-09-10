@@ -14,20 +14,20 @@
     swaynotificationcenter # Notification daemon
     brightnessctl
   ];
-  
+
   wayland.windowManager.hyprland = {
     enable = true;
     settings = {
 
       ### MONITORS
       #monitor = <name>, <resolution@refresh_rate>, <position>
-      monitor = [ 
-        
+      monitor = [
+
         "DVI-D-1, 1920x1080@60.01Hz, -1920x0, 1"
-        "HDMI-A-1, 1920x1080@165.00Hz, 0x0, 1" 
+        "HDMI-A-1, 1920x1080@165.00Hz, 0x0, 1"
       ];
 
-      workspace = [ 
+      workspace = [
         "1, monitor:HDMI-A-1"
         "2, monitor:HDMI-A-1"
         "3, monitor:HDMI-A-1"
@@ -48,16 +48,19 @@
       "$fileManager" = "nemo";
       "$menu" = "rofi -show drun";
 
-      ### AUTOSTART 
-      exec-once = [ 
+      ### AUTOSTART
+      exec-once = [
         "waybar"
         "hyprpaper"
         "swaync"
         "hypridle"
+        "v2rayn"
+        "keepassxc"
+        "telegram-desktop"
       ];
 
       ### ENVIRONMENT VARIABLES
-      env = [ 
+      env = [
         "XCURSOR_THEME, WhiteSur-cursors"
         "XCURSOR_SIZE, 24"
       ];
@@ -95,7 +98,7 @@
       animations = {
         enabled = "yes, please :)";
 
-        bezier = [ 
+        bezier = [
           "easeOutQuint,0.23,1,0.32,1"
           "easeInOutCubic,0.65,0.05,0.36,1"
           "linear,0,0,1,1"
@@ -103,7 +106,7 @@
           "quick,0.15,0,0.1,1"
         ];
 
-        animation = [ 
+        animation = [
           "global, 1, 10, default"
           "border, 1, 5.39, easeOutQuint"
           "windows, 1, 4.79, easeOutQuint"
@@ -137,7 +140,7 @@
         force_default_wallpaper = 0;
         disable_hyprland_logo = true;
       };
-  
+
       ### INPUT
       input = {
         kb_layout = "us, ru";
@@ -150,8 +153,8 @@
       };
 
       gestures = {
-            workspace_swipe = false;
-          };
+        workspace_swipe = false;
+      };
 
       device = {
         name = "epic-mouse-v1";
@@ -162,7 +165,7 @@
 
       "$mainMod" = "SUPER";
 
-      bind = [ 
+      bind = [
         "$mainMod, RETURN, exec, $terminal"
         "$mainMod, V, exec, $editor"
         "$mainMod, B, exec, $browser "
@@ -207,12 +210,12 @@
         "$mainMod, mouse_up, workspace, e-1"
       ];
 
-      bindm = [ 
+      bindm = [
         "$mainMod, mouse:272, movewindow"
         "$mainMod, mouse:273, resizewindow"
       ];
 
-      bindel = [ 
+      bindel = [
         ",XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%"
         ",XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%"
         ",XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
@@ -221,7 +224,7 @@
         ",XF86MonBrightnessDown, exec, brightnessctl s 10%-"
       ];
 
-      bindl = [ 
+      bindl = [
         ", XF86AudioNext, exec, playerctl next"
         ", XF86AudioPause, exec, playerctl play-pause"
         ", XF86AudioPlay, exec, playerctl play-pause"
@@ -230,7 +233,7 @@
 
       ### WINDOWS AND WORKSPACES
 
-      windowrulev2 = [ 
+      windowrulev2 = [
         "suppressevent maximize, class:.*"
         "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0 "
       ];

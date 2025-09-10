@@ -1,22 +1,30 @@
-{ config, pkgs, inputs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
-  imports = [ 
-      ./hardware-configuration.nix
-      ./system-modules
-      ../../modules/nixos
-      inputs.home-manager.nixosModules.default 
-    ];
+  imports = [
+    ./hardware-configuration.nix
+    ./system-modules
+    ../../modules/nixos
+    inputs.home-manager.nixosModules.default
+  ];
 
+  virtualisation.docker.enable = true;
   # Enable Flakes
-  nix.settings.experimental-features = [ "nix-command" "flakes"];
-
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
   # Home Manager
   home-manager = {
     extraSpecialArgs = { inherit inputs; }; # Passes inputs to HM modules
     useGlobalPkgs = true; # NixOS and HM use the same global packages
     users = {
-      "snrx" = { 
+      "snrx" = {
         imports = [
           ../../hosts/msi-laptop/home.nix
           #inputs.self.outputs.homeManagerModules.default
@@ -25,6 +33,11 @@
     };
     backupFileExtension = "backup";
   };
+
+  programs.zsh.enable = true;
+  programs.zsh.ohMyZsh.enable = true;
+  programs.zsh.autosuggestions.enable = true;
+  programs.zsh.syntaxHighlighting.enable = true;
 
   # Automatize garbage collection
   nix.gc = {
@@ -40,13 +53,12 @@
     };
   };
 
-
   # Enables Hyprland at system-level to avoid troubles with SDDM
   programs.hyprland.enable = true;
 
   # Fix SDDM not starting any DE session
   services.dbus.packages = with pkgs; [ dconf ];
-  
+
   # Video Acceleration and OpenGL
   hardware.graphics = {
     enable = true;
@@ -68,18 +80,30 @@
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
   };
 
-   # Allow unfree packages
+  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-     vim
-     wget
-     git
-     home-manager
-     starship
-     nix-prefetch
-     nix-prefetch-github
-     exfatprogs
+    vim
+    wget
+    git
+    home-manager
+    starship
+    nix-prefetch
+    nix-prefetch-github
+    exfatprogs
+    nixfmt
+    nixd
+    docker
+    go
+    fzf
+    bat
+    eza
+    dust
+    ripgrep
+    fd
+    procs
+    nftables
   ];
 
   # Enabled services
