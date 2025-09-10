@@ -1,24 +1,33 @@
-{ config, pkgs, inputs, ... }:
+{
+  pkgs,
+  ...
+}:
 
 {
   imports = [
     ../../modules/home-manager
   ];
 
-  home = { 
+  home = {
     username = "snrx";
     homeDirectory = "/home/snrx";
-    stateVersion = "25.11"; # Do not change
+    stateVersion = "25.05"; # Do not change
   };
 
   home.packages = with pkgs; [
     dconf
+    gopls
+    delve
+    golangci-lint
+    zoxide
+    atuin
+
   ];
 
   home.sessionVariables = {
     TERMINAL = "kitty";
-    EDITOR = "nvim";
-    VISUAL = "nvim";
+    EDITOR = "code --wait";
+    VISUAL = "code --wait";
     HYPRSHOT_DIR = /home/snrx/Screenshots;
   };
 
@@ -28,7 +37,6 @@
     "/Nixos/scripts/system"
     "/Nixos/scripts/hypr"
   ];
-
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
 }
