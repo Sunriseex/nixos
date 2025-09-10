@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, ... }:
+{ inputs, pkgs, ... }:
 
 {
   boot.loader = {
@@ -16,5 +16,5 @@
       device = "nodev";
       theme = inputs.nixos-grub-themes.packages.${pkgs.system}.hyperfluent;
     };
-  };    
+  };
 }

@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -9,7 +9,7 @@
     folder-color-switcher
     cinnamon-common
   ];
-  
+
   # Set Nemo as default file browser
   xdg.desktopEntries.nemo = {
     name = "Nemo";
@@ -19,8 +19,8 @@
   xdg.mimeApps = {
     enable = true;
     defaultApplications = {
-        "inode/directory" = [ "nemo.desktop" ];
-        "application/x-gnome-saved-search" = [ "nemo.desktop" ];
+      "inode/directory" = [ "nemo.desktop" ];
+      "application/x-gnome-saved-search" = [ "nemo.desktop" ];
     };
   };
 
@@ -38,6 +38,3 @@
     };
   };
 }
-
-
-

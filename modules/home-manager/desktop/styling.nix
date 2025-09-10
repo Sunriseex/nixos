@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ pkgs, ... }:
 
 {
   # Enable GTK
@@ -17,7 +17,7 @@
       name = "WhiteSur-cursors";
       size = 24;
     };
-    
+
   };
 
   # Enable QT

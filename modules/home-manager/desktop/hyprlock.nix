@@ -1,4 +1,4 @@
-{ lib, config, ... }:
+{ ... }:
 
 {
   programs.hyprlock = {
@@ -33,7 +33,7 @@
           position = "35, 80";
           valign = "center";
           halign = "center";
-        } 
+        }
         # Day-Month-Date
         {
           monitor = "";
@@ -51,8 +51,8 @@
           text = "    $USER";
           color = "rgba(216, 222, 233, 0.80)";
           outline_thickness = 0;
-          dots_size = 0.2 ;
-          dots_spacing = 0.2 ;
+          dots_size = 0.2;
+          dots_spacing = 0.2;
           dots_center = true;
           font_size = 16;
           font_family = "SF Pro Display Bold";
@@ -61,7 +61,7 @@
           valign = "center";
         }
       ];
-      
+
       # USER-BOX
       shape = {
         monitor = "";
@@ -76,14 +76,14 @@
         halign = "center";
         valign = "center";
       };
-      
+
       # INPUT FIELD
       input-field = {
         monitor = "";
         size = "320, 55";
         outline_thickness = 0;
-        dots_size = 0.2 ;
-        dots_spacing = 0.2 ;
+        dots_size = 0.2;
+        dots_spacing = 0.2;
         dots_center = true;
         outer_color = "rgba(255, 255, 255, 0)";
         inner_color = "rgba(255, 255, 255, 0.1)";

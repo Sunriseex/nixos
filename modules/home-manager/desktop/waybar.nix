@@ -1,44 +1,54 @@
-{ config, ... } :
+{ ... }:
 
 {
   programs.waybar = {
     enable = true;
     settings = {
-      mainBar = { 
+      mainBar = {
         layer = "top";
         position = "top";
         height = 50;
         spacing = 0;
-      
 
-        modules-left = [ "custom/info" "cpu" "memory" ];
+        modules-left = [
+          "custom/info"
+          "cpu"
+          "memory"
+        ];
         modules-center = [ "hyprland/workspaces" ];
-        modules-right = [ "tray" "network" "pulseaudio" "clock" "custom/lock" "custom/power" ];
-    
+        modules-right = [
+          "tray"
+          "network"
+          "pulseaudio"
+          "clock"
+          "custom/lock"
+          "custom/power"
+        ];
+
         "custom/info" = {
           format = "     ";
           on-click = "sh -c '\${TERMINAL:-kitty} sh -c \"fastfetch; echo; read -p \\\"Premi invio per uscire...\\\"\"'";
         };
-     
+
         "hyprland/workspaces" = {
           disable-scroll = false;
           all-outputs = true;
           format = "{icon}";
           on-click = "activate";
         };
-     
+
         "custom/lock" = {
           "format" = "<span color='#dcdfe1'>    </span>";
           "on-click" = "hyprlock";
           "tooltip" = true;
         };
-             
+
         "custom/power" = {
           format = "<span color='#FF4040'>    </span>";
           on-click = "wlogout -b 5 -r 1";
           tooltip = true;
         };
-     
+
         network = {
           format-wifi = "<span color='#00FFFF'> 󰖩  </span>{essid} ";
           format-ethernet = "<span color='#7FFF00'>   </span>Wired ";
@@ -48,19 +58,25 @@
           format-alt = "<span color='#00FFFF'> 󰖩  </span>{signalStrength}% ";
           interval = 1;
         };
-     
+
         battery = {
           states = {
             warning = 30;
             critical = 15;
-        };
+          };
           format = "<span color='#28CD41'> {icon}  </span>{capacity}% ";
           format-charging = " 󱐋 {capacity}% ";
-	        interval = 1;
-          format-icons = [ "" "" "" "" "" ];
+          interval = 1;
+          format-icons = [
+            ""
+            ""
+            ""
+            ""
+            ""
+          ];
           tooltip = true;
         };
-     
+
         pulseaudio = {
           format = "<span color='#dcdfe1'>{icon} </span>{volume}% ";
           format-muted = "<span color='#dcdfe1'> 󰖁 </span>0% ";
@@ -81,7 +97,7 @@
           on-click = "pactl -- set-sink-mute 0 toggle";
           tooltip = true;
         };
-     
+
         "custom/temperature" = {
           exec = "sensors | awk '/^Package id 0:/ {print int($4)}'";
           format = "<span color='#FFA500'> </span>{}°C ";
@@ -89,18 +105,18 @@
           tooltip = true;
           tooltip-format = "Temperatura CPU : {}°C";
         };
-     
+
         memory = {
           format = "<span color='#dcdfe1'>   </span>{used:0.1f}G/{total:0.1f}G ";
           tooltip = true;
           tooltip-format = "Utilizzo RAM: {used:0.2f}G/{total:0.2f}G";
         };
-     
+
         cpu = {
           format = "<span color='#dcdfe1'>   </span>{usage}% ";
           tooltip = true;
-          };
-       
+        };
+
         clock = {
           interval = 1;
           timezone = "Europe/Moscow";
@@ -108,12 +124,12 @@
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
         };
-     
+
         tray = {
           icon-size = 17;
           spacing = 6;
         };
-     
+
         backlight = {
           device = "intel_backlight";
           format = "<span color='#FFD700'>{icon}</span>{percent}% ";
@@ -125,7 +141,7 @@
             "<span color='#FFD700'> 󰃠 </span>"
           ];
         };
-            
+
       };
     };
 
@@ -156,12 +172,12 @@
         border-radius: 10px;
         border-width: 0px;
       }
-      
+
       #custom-info {
         font-size: 18px;
         color: #5178C4;
       }
-      
+
       #clock,
       #custom-power,
       #memory{
@@ -173,7 +189,7 @@
         border-radius: 0 10px 10px 0;
         border-width: 0px;
       }
-      
+
       #network,
       #custom-lock,
       #custom-info{
@@ -185,7 +201,7 @@
         border-radius: 10px 0 0 10px;
         border-width: 0px;
       }
-      
+
       #custom-reboot,
       #battery,
       #pulseaudio,
@@ -200,13 +216,13 @@
         padding: 4px 2px; 
         border-width: 0px;
       }
-      
+
       #custom-temperature.critical,
       #pulseaudio.muted {
         color: #FF0000;
         padding-top: 0;
       }
-      
+
       #network:hover,
       /*#tray:hover,*/
       #backlight:hover,
@@ -224,14 +240,14 @@
       #window:hover {
         background-color: rgba(70, 75, 90, 0.9);
       }
-      
+
       #workspaces button:hover{
         background-color: rgba(97, 175, 239, 0.2);
         padding: 2px 8px;
         margin: 0 2px;
         border-radius: 10px;
       }
-      
+
       #workspaces button.active {
         background-color: #151B27;
         /*background-color: #AEB4C0;*/
@@ -240,7 +256,7 @@
         margin: 0 2px;
         border-radius: 10px;
       }
-      
+
       #workspaces button {
         background: transparent;
         border: none;
@@ -249,7 +265,7 @@
         margin: 0 2px;
         font-weight: bold;
       }
-      
+
       #window {
         font-weight: 500;
         font-style: italic;

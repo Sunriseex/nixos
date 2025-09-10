@@ -1,4 +1,4 @@
-{ lib, config, pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   services.displayManager.sddm = {
@@ -15,7 +15,7 @@
         FullBlur = true;
         BlurRadius = 25;
         MainColor = "#999FAB";
-        BackgroundColor = "#BBC1CD";#0A101C
+        BackgroundColor = "#BBC1CD"; # 0A101C
         AccentColor = "#343A46";
         DateFormat = "dddd d MMMM";
         HeaderText = "";

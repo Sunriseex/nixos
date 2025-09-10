@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ ... }:
 
 {
   programs.bash = {
@@ -6,7 +6,7 @@
     enableCompletion = true;
     shellAliases = {
       # NixOS & Sistema
-      list-nixos-generations = "nixos-rebuild list-generations"; 
+      list-nixos-generations = "nixos-rebuild list-generations";
       size = "du -ah --max-depth=1 | sort -h";
       ip-show = "curl ifconfig.me";
       p-mount = "sudo mount -o uid=1000,gid=100";
@@ -22,7 +22,7 @@
       eval "$(starship init bash)"
       export XCURSOR_THEME=~/.icons/macOS
       export XCURSOR_SIZE=24
-      '';
+    '';
     initExtra = ''
       . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" 
     '';

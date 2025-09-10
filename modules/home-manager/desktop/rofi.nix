@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 
 let
   inherit (config.lib.formats.rasi) mkLiteral;
@@ -7,7 +7,8 @@ let
   nord6 = mkLiteral "#ECEFF4";
   selected-font = "HarmonyOS Sans SC bold 12";
 
-in {
+in
+{
   programs.rofi = {
     enable = true;
     font = selected-font;
@@ -35,7 +36,7 @@ in {
       prompt = {
         background-color = nord1;
         enabled = true;
-        padding = mkLiteral "0.5% 32px 0% 0%"; 
+        padding = mkLiteral "0.5% 32px 0% 0%";
         font = selected-font;
       };
 
@@ -48,7 +49,10 @@ in {
       };
 
       inputbar = {
-        children = map mkLiteral [ "prompt" "entry" ];
+        children = map mkLiteral [
+          "prompt"
+          "entry"
+        ];
         background-color = nord1;
         expand = false;
         border-radius = mkLiteral "6px";
@@ -65,7 +69,10 @@ in {
       };
 
       mainbox = {
-        children = map mkLiteral [ "inputbar" "listview" ];
+        children = map mkLiteral [
+          "inputbar"
+          "listview"
+        ];
         spacing = mkLiteral "2%";
         padding = mkLiteral "2% 1% 2% 1%";
       };
