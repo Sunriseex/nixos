@@ -1,6 +1,44 @@
 { ... }:
 
 {
+  home.file.".config/waybar/scripts/weather.sh" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      API_KEY="your_api_key_here"
+      CITY="Moscow"
+      URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
+      
+      WEATHER_JSON=$(curl -s "$URL")
+      TEMP=$(echo "$WEATHER_JSON" | jq '.main.temp' | cut -d. -f1)
+      WEATHER_DESC=$(echo "$WEATHER_JSON" | jq -r '.weather[0].description')
+      ICON_CODE=$(echo "$WEATHER_JSON" | jq -r '.weather[0].icon')
+      
+      get_icon() {
+          case $1 in
+              "01d") echo "☀️";;
+              "01n") echo "🌙";;
+              "02d") echo "⛅";;
+              "02n") echo "⛅";;
+              "03d"|"03n") echo "☁️";;
+              "04d"|"04n") echo "☁️";;
+              "09d"|"09n") echo "🌧️";;
+              "10d"|"10n") echo "🌦️";;
+              "11d"|"11n") echo "⛈️";;
+              "13d"|"13n") echo "❄️";;
+              "50d"|"50n") echo "🌫️";;
+              *) echo "🌡️";;
+          esac
+      }
+      
+      ICON=$(get_icon "$ICON_CODE")
+      echo "$ICON $TEMP°C"
+    '';
+  };
+
+
+
+
   programs.waybar = {
     enable = true;
     settings = {
@@ -14,20 +52,56 @@
           "custom/info"
           "cpu"
           "memory"
+          "custom/nowplaying"
         ];
         modules-center = [ "hyprland/workspaces" ];
         modules-right = [
           "tray"
           "network"
-          "pulseaudio"
+          "pulseaudio"  
+          "pulseaudio#microphone" 
+          "custom/weather" 
           "clock"
           "custom/lock"
           "custom/power"
         ];
 
+        "custom/weather" = {
+          "format" = "{}";
+          "exec" = "~/.config/waybar/scripts/weather.sh";
+          "interval" = 600;
+          "tooltip" = true;
+          "on-click" = "xdg-open https://yandex.ru/pogoda/moscow";
+        };
+
+        "custom/nowplaying" = {
+        "format" = "{}";
+        "exec" = ''
+        #!/bin/sh
+        status=$(playerctl status 2>/dev/null)
+    
+        if [ "$status" = "Playing" ]; then
+          current_artist=$(playerctl metadata artist)
+          current_title=$(playerctl metadata title)
+          echo " $current_artist - $current_title"
+        elif [ "$status" = "Paused" ]; then
+          echo " Paused"
+        else
+         echo " No music"
+        fi
+        '';
+        "on-click" = "playerctl play-pause";
+        "on-scroll-up" = "playerctl next";
+        "on-scroll-down" = "playerctl previous";
+        "interval" = 1;
+        "tooltip" = true;
+        "max-length" = 30;
+        "escape" = true;
+        };
+
         "custom/info" = {
           format = "     ";
-          on-click = "sh -c '\${TERMINAL:-kitty} sh -c \"fastfetch; echo; read -p \\\"Premi invio per uscire...\\\"\"'";
+          on-click = "sh -c '\${TERMINAL:-kitty} sh -c \"fastfetch; echo; read -p \\\"Press enter to exit...\\\"\"'";
         };
 
         "hyprland/workspaces" = {
@@ -78,7 +152,7 @@
         };
 
         pulseaudio = {
-          format = "<span color='#dcdfe1'>{icon} </span>{volume}% ";
+          format = "<span color='#dcdfe1'>{icon}</span>{volume}% ";
           format-muted = "<span color='#dcdfe1'> 󰖁 </span>0% ";
           format-icons = {
             headphone = "<span color='#dcdfe1'>  </span>";
@@ -94,7 +168,16 @@
             ];
           };
           on-click-right = "pavucontrol";
-          on-click = "pactl -- set-sink-mute 0 toggle";
+          on-click = "pactl set-sink-mute @DEFAULT_SINK@ toggle";
+          tooltip = true;
+        };
+
+        "pulseaudio#microphone" = {
+          format = "{format_source}";
+          format-source = "<span color='#dcdfe1'>  </span>{volume}% ";
+          format-source-muted = "<span color='#dcdfe1'>  </span>Muted ";
+          on-click = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";
+          on-click-right = "pavucontrol";
           tooltip = true;
         };
 
@@ -120,7 +203,7 @@
         clock = {
           interval = 1;
           timezone = "Europe/Moscow";
-          format = "<span color='#dcdfe1'>  </span> {:%H:%M} ";
+          format = "<span color='#dcdfe1'>  </span> {:%H:%M:%S} ";
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
         };
@@ -270,6 +353,41 @@
         font-weight: 500;
         font-style: italic;
       }
+
+      /* Стиль для модуля с текущим треком */
+      #custom-nowplaying {
+        background-color: #323844;
+        margin-top: 6px;
+        margin-left: 6px;
+        margin-right: 6px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        border-width: 0px;
+        color: #dcdfe1;
+        font-style: italic;
+        /* Анимация плавного изменения цвета */
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+
+      #custom-nowplaying:hover {
+        background-color: rgba(70, 75, 90, 0.9);
+        color: #ffffff;
+      }   
+
+       #custom-weather {
+        background-color: #323844;
+        margin-top: 6px;
+        margin-left: 6px;
+        margin-right: 6px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        border-width: 0px;
+        color: #dcdfe1;
+      }
+
+      #custom-weather:hover {
+        background-color: rgba(70, 75, 90, 0.9);
+      }   
     '';
   };
 }

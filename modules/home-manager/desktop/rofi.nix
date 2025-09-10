@@ -101,7 +101,9 @@ in
       "element selected" = {
         background-color = nord1;
         border-radius = mkLiteral "6px";
-      };
+      };      
     };
+    
   };
+  
 }

@@ -5,6 +5,7 @@
     wayland
     xwayland
     rofi
+    # rofi-wayland
     hyprshot # Screenshot utility
     jq # JSON parser and manipulator
     grim # Screenshot tool
@@ -54,9 +55,7 @@
         "hyprpaper"
         "swaync"
         "hypridle"
-        "v2rayn"
-        "keepassxc"
-        "telegram-desktop"
+
       ];
 
       ### ENVIRONMENT VARIABLES
@@ -162,11 +161,14 @@
       };
 
       ### KEYBINDINGS
-
+      
       "$mainMod" = "SUPER";
 
       bind = [
+        "$mainMod, left, movewindow, l"
+        "$mainMod, right, movewindow, r"
         "$mainMod, RETURN, exec, $terminal"
+        "$mainMod, TAB, workspace, m+1"
         "$mainMod, V, exec, $editor"
         "$mainMod, B, exec, $browser "
         "$mainMod, Q, killactive,"

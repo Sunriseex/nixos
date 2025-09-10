@@ -91,6 +91,7 @@
     nix-prefetch
     nix-prefetch-github
     exfatprogs
+    shfmt
     nixfmt
     nixd
     docker
@@ -103,6 +104,7 @@
     fd
     procs
     nftables
+    playerctl
   ];
 
   # Enabled services
