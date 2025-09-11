@@ -23,6 +23,5 @@
     # Apps
     ./apps/firefox.nix
     ./apps/librewolf.nix
-    # ./apps/home-assistant.nix
   ];
 }
