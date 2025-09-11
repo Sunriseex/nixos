@@ -23,7 +23,6 @@
     v2rayn
     xray
     vscode
-    aseprite
     freecad
     synology-drive-client
     localsend # Cross-platform FOSS alternative to Airdrop
