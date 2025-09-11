@@ -44,6 +44,7 @@
   programs.gnupg.agent = {
     enable = true;
     enableSSHSupport = false;
+    pinentryPackage = pkgs.pinentry-gnome3;
   };
 
   # Automatize garbage collection
@@ -114,7 +115,7 @@
     nftables
     playerctl
     gnupg
-    pinentry-gtk2
+
   ];
 
   # Enabled services

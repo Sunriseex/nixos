@@ -35,7 +35,7 @@
     piper # Mouse configuration app
     bluez
     bluez-tools
-
+    protonup-qt
   ];
 
   services.flatpak.packages = [
