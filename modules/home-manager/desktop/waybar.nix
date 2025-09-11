@@ -8,12 +8,12 @@
       API_KEY="your_api_key_here"
       CITY="Moscow"
       URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
-      
+
       WEATHER_JSON=$(curl -s "$URL")
       TEMP=$(echo "$WEATHER_JSON" | jq '.main.temp' | cut -d. -f1)
       WEATHER_DESC=$(echo "$WEATHER_JSON" | jq -r '.weather[0].description')
       ICON_CODE=$(echo "$WEATHER_JSON" | jq -r '.weather[0].icon')
-      
+
       get_icon() {
           case $1 in
               "01d") echo "☀️";;
@@ -30,14 +30,11 @@
               *) echo "🌡️";;
           esac
       }
-      
+
       ICON=$(get_icon "$ICON_CODE")
       echo "$ICON $TEMP°C"
     '';
   };
-
-
-
 
   programs.waybar = {
     enable = true;
@@ -57,10 +54,10 @@
         modules-center = [ "hyprland/workspaces" ];
         modules-right = [
           "tray"
-          "network"
-          "pulseaudio"  
-          "pulseaudio#microphone" 
-          "custom/weather" 
+          # "network"
+          "pulseaudio"
+          "pulseaudio#microphone"
+          "custom/weather"
           "clock"
           "custom/lock"
           "custom/power"
@@ -75,28 +72,28 @@
         };
 
         "custom/nowplaying" = {
-        "format" = "{}";
-        "exec" = ''
-        #!/bin/sh
-        status=$(playerctl status 2>/dev/null)
-    
-        if [ "$status" = "Playing" ]; then
-          current_artist=$(playerctl metadata artist)
-          current_title=$(playerctl metadata title)
-          echo " $current_artist - $current_title"
-        elif [ "$status" = "Paused" ]; then
-          echo " Paused"
-        else
-         echo " No music"
-        fi
-        '';
-        "on-click" = "playerctl play-pause";
-        "on-scroll-up" = "playerctl next";
-        "on-scroll-down" = "playerctl previous";
-        "interval" = 1;
-        "tooltip" = true;
-        "max-length" = 30;
-        "escape" = true;
+          "format" = "{}";
+          "exec" = ''
+            #!/bin/sh
+            status=$(playerctl status 2>/dev/null)
+
+            if [ "$status" = "Playing" ]; then
+              current_artist=$(playerctl metadata artist)
+              current_title=$(playerctl metadata title)
+              echo " $current_artist - $current_title"
+            elif [ "$status" = "Paused" ]; then
+              echo " Paused"
+            else
+             echo " No music"
+            fi
+          '';
+          "on-click" = "playerctl play-pause";
+          "on-scroll-up" = "playerctl next";
+          "on-scroll-down" = "playerctl previous";
+          "interval" = 1;
+          "tooltip" = true;
+          "max-length" = 30;
+          "escape" = true;
         };
 
         "custom/info" = {

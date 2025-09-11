@@ -150,19 +150,6 @@ tracking-protection-icon-container,
   display: none;
 }
 
-#back-button > .toolbarbutton-icon {
-  --backbutton-background: transparent !important;
-  border: none !important;
-}
-
-#back-button {
-  list-style-image: url("left-arrow.svg") !important;
-}
-
-#forward-button {
-  list-style-image: url("right-arrow.svg") !important;
-}
-
 toolbar {
   background-image: none !important;
 }
@@ -216,10 +203,10 @@ toolbar#nav-bar {
 }
 
 /* TODO: URL Bar Bug */
-/* #urlbar {  */
-/*   max-width: 70% !important;  */
-/*   margin: 0 15% !important;  */
-/* }  */
+/* #urlbar {
+  max-width: 70% !important;
+  margin: 0 15% !important;
+} */
 
 #urlbar-input:focus {
   color: var(--snrx-urlbar-focused-color) !important;

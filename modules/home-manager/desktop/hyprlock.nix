@@ -90,7 +90,7 @@
         font_color = "rgb(200, 200, 200)";
         fade_on_empty = false;
         font_family = "SF Pro Display Bold";
-        placeholder_text = ''<i><span foreground="##ffffff99"> Inserisci Password </span></i>'';
+        placeholder_text = ''<i><span foreground="##ffffff99"> Password </span></i>'';
         hide_input = false;
         position = "34, -130";
         halign = "center";
