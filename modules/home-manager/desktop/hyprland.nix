@@ -55,7 +55,7 @@
         "hyprpaper"
         "swaync"
         "hypridle"
-
+        "v2rayN"
       ];
 
       ### ENVIRONMENT VARIABLES
@@ -149,6 +149,7 @@
         touchpad = {
           natural_scroll = true;
         };
+        numlock_by_default = true;
       };
 
       gestures = {
@@ -161,7 +162,7 @@
       };
 
       ### KEYBINDINGS
-      
+
       "$mainMod" = "SUPER";
 
       bind = [
