@@ -16,6 +16,8 @@
         "browser.newtabpage.activity-stream.default.sites" = "";
         "browser.urlbar.suggest.calculator" = true;
       };
+      userChrome = builtins.readFile ./firefox-css/userChrome.css;
+      userContent = builtins.readFile ./firefox-css/userContent.css;
 
     };
 
