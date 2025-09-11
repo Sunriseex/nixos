@@ -32,11 +32,19 @@
     };
     backupFileExtension = "backup";
   };
-
+  # ZSH
   programs.zsh.enable = true;
   programs.zsh.ohMyZsh.enable = true;
   programs.zsh.autosuggestions.enable = true;
   programs.zsh.syntaxHighlighting.enable = true;
+
+  # SSH
+  programs.ssh.startAgent = true;
+  # GPG
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = false;
+  };
 
   # Automatize garbage collection
   nix.gc = {
@@ -105,6 +113,8 @@
     procs
     nftables
     playerctl
+    gnupg
+    pinentry-gtk2
   ];
 
   # Enabled services
