@@ -16,7 +16,6 @@
     zip
     unzip
     ffmpeg
-    bitwarden-cli
     upower # Battery utility
     wl-clipboard
     fanctl # Fan control

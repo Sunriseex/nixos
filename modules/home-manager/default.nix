@@ -1,7 +1,6 @@
 {
   imports = [
     # Shell
-    # ./shell/bash.nix
     ./shell/cli-tools.nix
     ./shell/fastfetch.nix
     ./shell/git.nix
