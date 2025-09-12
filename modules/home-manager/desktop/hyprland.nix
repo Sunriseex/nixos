@@ -43,7 +43,7 @@
       ];
 
       ### MY PROGRAMS
-      "$terminal" = "kitty";
+      "$terminal" = "ghostty";
       "$browser" = "firefox";
       "$editor" = "code .";
       "$fileManager" = "nemo";

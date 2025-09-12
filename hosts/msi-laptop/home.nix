@@ -21,11 +21,10 @@
     golangci-lint
     zoxide
     atuin
-
   ];
 
   home.sessionVariables = {
-    TERMINAL = "kitty";
+    TERMINAL = "ghostty";
     EDITOR = "code --wait";
     VISUAL = "code --wait";
     HYPRSHOT_DIR = /home/snrx/Screenshots;

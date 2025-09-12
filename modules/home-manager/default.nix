@@ -5,6 +5,7 @@
     ./shell/fastfetch.nix
     ./shell/git.nix
     ./shell/kitty.nix
+    ./shell/ghostty.nix
     ./shell/starship.nix
     ./shell/shell.nix
     # Desktop

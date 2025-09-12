@@ -17,8 +17,14 @@ in
 
       logo = {
 
-        type = "none";
-
+        type = "kitty";
+        source = "~/.config/fastfetch/nixos.png";
+        height = 10;
+        width = 20;
+        padding = {
+          top = 10;
+          left = 3;
+        };
       };
 
       modules = [
