@@ -5,7 +5,7 @@
     executable = true;
     text = ''
       #!/bin/sh
-      API_KEY="your_api_key_here"
+      API_KEY=""
       CITY="Moscow"
       URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
 
@@ -46,7 +46,7 @@
         spacing = 0;
 
         modules-left = [
-          "custom/info"
+          "hyprland/language"
           "cpu"
           "memory"
           "custom/nowplaying"
@@ -54,7 +54,6 @@
         modules-center = [ "hyprland/workspaces" ];
         modules-right = [
           "tray"
-          # "network"
           "pulseaudio"
           "pulseaudio#microphone"
           "custom/weather"
@@ -67,7 +66,7 @@
           "format" = "{}";
           "exec" = "~/.config/waybar/scripts/weather.sh";
           "interval" = 600;
-          "tooltip" = true;
+          "tooltip" = false;
           "on-click" = "xdg-open https://yandex.ru/pogoda/moscow";
         };
 
@@ -80,25 +79,29 @@
             if [ "$status" = "Playing" ]; then
               current_artist=$(playerctl metadata artist)
               current_title=$(playerctl metadata title)
-              echo " $current_artist - $current_title"
+              echo "▶ $current_artist - $current_title"
             elif [ "$status" = "Paused" ]; then
-              echo " Paused"
+              echo "⏸ Paused"
             else
-             echo " No music"
+             echo "⏹ No music"
             fi
           '';
           "on-click" = "playerctl play-pause";
           "on-scroll-up" = "playerctl next";
           "on-scroll-down" = "playerctl previous";
           "interval" = 1;
-          "tooltip" = true;
+          "tooltip" = false;
           "max-length" = 30;
           "escape" = true;
         };
 
-        "custom/info" = {
-          format = "     ";
-          on-click = "sh -c '\${TERMINAL:-kitty} sh -c \"fastfetch; echo; read -p \\\"Press enter to exit...\\\"\"'";
+        "hyprland/language" = {
+          "format" = "⌨️ {}";
+          "format-en" = "EN";
+          "format-ru" = "RU";
+          "tooltip" = false;
+          "on-click" =
+            "sh -c '\${TERMINAL:-ghostty} sh -c \"fastfetch; echo; read -p \\\"Press enter to exit...\\\"\"'";
         };
 
         "hyprland/workspaces" = {
@@ -109,98 +112,62 @@
         };
 
         "custom/lock" = {
-          "format" = "<span color='#dcdfe1'>    </span>";
+          "format" = "    ";
           "on-click" = "hyprlock";
-          "tooltip" = true;
+          "tooltip" = false;
         };
 
         "custom/power" = {
-          format = "<span color='#FF4040'>    </span>";
+          format = "    ";
           on-click = "wlogout -b 5 -r 1";
-          tooltip = true;
-        };
-
-        network = {
-          format-wifi = "<span color='#00FFFF'> 󰖩  </span>{essid} ";
-          format-ethernet = "<span color='#7FFF00'>   </span>Wired ";
-          tooltip-format = "<span color='#FF1493'> 󰅧  </span>{bandwidthUpBytes}  <span color='#00BFFF'> 󰅢 </span>{bandwidthDownBytes}";
-          format-linked = "<span color='#FFA500'> 󱘖  </span>{ifname} (No IP) ";
-          format-disconnected = "<span color='#FF4040'>   </span>Disconnected ";
-          format-alt = "<span color='#00FFFF'> 󰖩  </span>{signalStrength}% ";
-          interval = 1;
-        };
-
-        battery = {
-          states = {
-            warning = 30;
-            critical = 15;
-          };
-          format = "<span color='#28CD41'> {icon}  </span>{capacity}% ";
-          format-charging = " 󱐋 {capacity}% ";
-          interval = 1;
-          format-icons = [
-            ""
-            ""
-            ""
-            ""
-            ""
-          ];
-          tooltip = true;
+          tooltip = false;
         };
 
         pulseaudio = {
-          format = "<span color='#dcdfe1'>{icon}</span>{volume}% ";
-          format-muted = "<span color='#dcdfe1'> 󰖁 </span>0% ";
+          format = "{icon} {volume}%";
+          format-muted = "󰖁 0%";
           format-icons = {
-            headphone = "<span color='#dcdfe1'>  </span>";
-            hands-free = "<span color='#dcdfe1'>  </span>";
-            headset = "<span color='#dcdfe1'>  </span>";
-            phone = "<span color='#dcdfe1'>  </span>";
-            portable = "<span color='#dcdfe1'>  </span>";
-            car = "<span color='#dcdfe1'>  </span>";
+            headphone = "";
+            hands-free = "";
+            headset = "";
+            phone = "";
+            portable = "";
+            car = "";
             default = [
-              "<span color='#dcdfe1'>  </span>"
-              "<span color='#dcdfe1'>  </span>"
-              "<span color='#dcdfe1'>  </span>"
+              ""
+              ""
+              ""
             ];
           };
           on-click-right = "pavucontrol";
           on-click = "pactl set-sink-mute @DEFAULT_SINK@ toggle";
-          tooltip = true;
+          tooltip = false;
         };
 
         "pulseaudio#microphone" = {
           format = "{format_source}";
-          format-source = "<span color='#dcdfe1'>  </span>{volume}% ";
-          format-source-muted = "<span color='#dcdfe1'>  </span>Muted ";
+          format-source = " {volume}%";
+          format-source-muted = " Muted";
           on-click = "pactl set-source-mute @DEFAULT_SOURCE@ toggle";
           on-click-right = "pavucontrol";
-          tooltip = true;
-        };
-
-        "custom/temperature" = {
-          exec = "sensors | awk '/^Package id 0:/ {print int($4)}'";
-          format = "<span color='#FFA500'> </span>{}°C ";
-          interval = 5;
-          tooltip = true;
-          tooltip-format = "Temperatura CPU : {}°C";
+          tooltip = false;
         };
 
         memory = {
-          format = "<span color='#dcdfe1'>   </span>{used:0.1f}G/{total:0.1f}G ";
+          format = " {used:0.1f}G/{total:0.1f}G";
           tooltip = true;
-          tooltip-format = "Utilizzo RAM: {used:0.2f}G/{total:0.2f}G";
+          tooltip-format = "Used RAM: {used:0.2f}G/{total:0.2f}G";
         };
 
         cpu = {
-          format = "<span color='#dcdfe1'>   </span>{usage}% ";
+          format = " {usage}%";
           tooltip = true;
         };
 
         clock = {
           interval = 1;
           timezone = "Europe/Moscow";
-          format = "<span color='#dcdfe1'>  </span> {:%H:%M:%S} ";
+          format = " {:%H:%M:%S}";
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
         };
@@ -208,20 +175,8 @@
         tray = {
           icon-size = 17;
           spacing = 6;
+          protocol = "status-notifier";
         };
-
-        backlight = {
-          device = "intel_backlight";
-          format = "<span color='#FFD700'>{icon}</span>{percent}% ";
-          tooltip = true;
-          format-icons = [
-            "<span color='#696969'> 󰃞 </span>"
-            "<span color='#A9A9A9'> 󰃝 </span>"
-            "<span color='#FFFF66'> 󰃟 </span>"
-            "<span color='#FFD700'> 󰃠 </span>"
-          ];
-        };
-
       };
     };
 
@@ -241,102 +196,93 @@
       }
 
       /* Workspaces */
-      #workspaces,
-      #window,
-      #tray{
+      #workspaces {
         background-color: #323844;
         padding: 4px 6px; 
-        margin-top: 6px; 
-        margin-left: 6px;
-        margin-right: 6px;
+        margin: 6px 6px 0 6px;
         border-radius: 10px;
         border-width: 0px;
       }
 
-      #custom-info {
-        font-size: 18px;
-        color: #5178C4;
-      }
-
-      #clock,
-      #custom-power,
-      #memory{
+       #language {
         background-color: #323844;
-        margin-top: 6px; 
-        margin-right: 6px;
-        /*margin-bottom: 4px;*/
-        padding: 4px 2px; 
-        border-radius: 0 10px 10px 0;
-        border-width: 0px;
-      }
-
-      #network,
-      #custom-lock,
-      #custom-info{
-        background-color: #323844;
-        margin-top: 6px; 
+        margin-top: 6px;
         margin-left: 6px;
-        /*margin-bottom: 4px;*/
-        padding: 4px 2px;
-        border-radius: 10px 0 0 10px;
-        border-width: 0px;
+        margin-right: 6px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        color: #dcdfe1;
       }
 
-      #custom-reboot,
-      #battery,
-      #pulseaudio,
-      #backlight,
-      #custom-temperature,
-      #memory,
-      #cpu,
-      #custom-info{
+      #language:hover {
+        background-color: rgba(70, 75, 90, 0.9);
+        color: #ffffff;
+      }
+
+      /* Левые модули */
+      #cpu, #memory {
         background-color: #323844;
-        margin-top: 6px; 
-        /*margin-bottom: 4px;*/
-        padding: 4px 2px; 
-        border-width: 0px;
+        margin: 6px 0 0 0;
+        padding: 4px 8px;
+        border-radius: 0;
       }
 
-      #custom-temperature.critical,
-      #pulseaudio.muted {
-        color: #FF0000;
-        padding-top: 0;
+      #cpu {
+        margin-left: 6px;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
       }
 
-      #network:hover,
-      /*#tray:hover,*/
-      #backlight:hover,
-      #battery:hover,
-      #pulseaudio:hover,
-      #custom-temperature:hover,
-      #memory:hover,
+      #memory {
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      /* Правые модули - объединенная группа */
+      #tray, #pulseaudio, #pulseaudio\\#microphone, #custom-weather, #clock, #custom-lock, #custom-power {
+        background-color: #323844;
+        margin: 6px 0 0 0;
+        padding: 4px 8px;
+        border-radius: 0;
+      }
+
+      #tray {
+        margin-left: 6px;
+        border-top-left-radius: 10px;
+        border-bottom-left-radius: 10px;
+      }
+
+      #custom-power {
+        margin-right: 6px;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      /* Модуль с музыкой */
+      #custom-nowplaying {
+        background-color: #323844;
+        margin: 6px 6px 0 6px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-style: italic;
+      }
+
+      /* Ховер-эффекты */
+      #language:hover,
       #cpu:hover,
+      #memory:hover,
+      #custom-nowplaying:hover,
+      #tray:hover,
+      #pulseaudio:hover,
+      #pulseaudio\\#microphone:hover,
+      #custom-weather:hover,
       #clock:hover,
       #custom-lock:hover,
-      #custom-reboot:hover,
-      #custom-power:hover,
-      #custom-info:hover,
-      /*#workspaces:hover,*/
-      #window:hover {
+      #custom-power:hover {
         background-color: rgba(70, 75, 90, 0.9);
       }
 
-      #workspaces button:hover{
-        background-color: rgba(97, 175, 239, 0.2);
-        padding: 2px 8px;
-        margin: 0 2px;
-        border-radius: 10px;
-      }
-
-      #workspaces button.active {
-        background-color: #151B27;
-        /*background-color: #AEB4C0;*/
-        color: #ffffff;
-        padding: 2px 8px;
-        margin: 0 2px;
-        border-radius: 10px;
-      }
-
+      /* Рабочие пространства */
       #workspaces button {
         background: transparent;
         border: none;
@@ -344,47 +290,17 @@
         padding: 2px 8px;
         margin: 0 2px;
         font-weight: bold;
-      }
-
-      #window {
-        font-weight: 500;
-        font-style: italic;
-      }
-
-      /* Стиль для модуля с текущим треком */
-      #custom-nowplaying {
-        background-color: #323844;
-        margin-top: 6px;
-        margin-left: 6px;
-        margin-right: 6px;
-        padding: 4px 8px;
         border-radius: 10px;
-        border-width: 0px;
-        color: #dcdfe1;
-        font-style: italic;
-        /* Анимация плавного изменения цвета */
-        transition: background-color 0.3s ease, color 0.3s ease;
       }
 
-      #custom-nowplaying:hover {
-        background-color: rgba(70, 75, 90, 0.9);
+      #workspaces button:hover {
+        background-color: rgba(97, 175, 239, 0.2);
+      }
+
+      #workspaces button.active {
+        background-color: #151B27;
         color: #ffffff;
-      }   
-
-       #custom-weather {
-        background-color: #323844;
-        margin-top: 6px;
-        margin-left: 6px;
-        margin-right: 6px;
-        padding: 4px 8px;
-        border-radius: 10px;
-        border-width: 0px;
-        color: #dcdfe1;
       }
-
-      #custom-weather:hover {
-        background-color: rgba(70, 75, 90, 0.9);
-      }   
     '';
   };
 }

@@ -6,3 +6,4 @@ result-*
 .direnv
 
 secrets.nix
+obsidian-backup.sh
