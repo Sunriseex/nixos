@@ -103,6 +103,7 @@
     shfmt
     nixfmt
     nixd
+    nil
     docker
     go
     fzf
