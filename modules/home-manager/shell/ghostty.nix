@@ -9,8 +9,10 @@
       font-style = "Bold";
       font-size = 14;
       background-opacity = 0.1;
-      background-blur = 15;
-      # cursor = "Beam";
+      background-blur = 1;
+      cursor-opacity = 1;
+      selection-background = "#F5E0DC";
+      selection-foreground = "#ECEFF4";
     };
 
   };

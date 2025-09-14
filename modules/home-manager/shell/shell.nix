@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   programs.zoxide.enable = true;
   programs.atuin.enable = true;
@@ -6,7 +6,17 @@
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-
+    plugins = [
+      {
+        name = "zsh-autocomplete";
+        src = pkgs.fetchFromGitHub {
+          owner = "marlonrichert";
+          repo = "zsh-autocomplete";
+          rev = "25.03.19";
+          sha256 = "07i3wg4qh0nkqk7fsyc89s57x1fljy3bfhqncnmwd2qhcgjmmgkr";
+        };
+      }
+    ];
     oh-my-zsh = {
       enable = true;
       plugins = [
@@ -23,7 +33,7 @@
     shellAliases = {
       ll = "eza -l --group-directories-first --icons --git";
       la = "eza -a --group-directories-first --icons";
-      lla = "eza -la --group-directories-first --icons --git";
+      ls = "eza -la --group-directories-first --icons --git";
       lt = "eza --tree --level=2 --group-directories-first --icons";
       cat = "bat --paging=never";
       grep = "rg";
