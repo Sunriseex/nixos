@@ -5,8 +5,8 @@
     executable = true;
     text = ''
       #!/bin/sh
-      API_KEY=""
-      CITY="Moscow"
+      API_KEY="''${OPENWEATHER_API_KEY}"
+      CITY="''${OPENWEATHER_CITY}"
       URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
 
       WEATHER_JSON=$(curl -s "$URL")

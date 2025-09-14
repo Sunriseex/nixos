@@ -115,7 +115,7 @@
     nftables
     playerctl
     gnupg
-
+    direnv
   ];
 
   # Enabled services

@@ -19,6 +19,7 @@
           perpl "https://www.perplexity.ai/search?q="
         )
 
+        eval "$(direnv hook zsh)"
         eval "$(atuin init zsh)"
         eval "$(zoxide init zsh)"
         source <(fzf --zsh)
