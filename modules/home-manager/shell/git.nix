@@ -1,4 +1,7 @@
 { ... }:
+let
+  GIT_GPG_SIGNING_KEY = builtins.getEnv "GIT_GPG_SIGNING_KEY";
+in
 {
   programs.git = {
     enable = true;
@@ -11,7 +14,7 @@
     };
 
     signing = {
-      key = "";
+      key = GIT_GPG_SIGNING_KEY;
       signByDefault = true;
     };
 
