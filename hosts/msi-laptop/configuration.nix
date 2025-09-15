@@ -11,6 +11,11 @@
     ../../modules/nixos
     inputs.home-manager.nixosModules.default
   ];
+  # Agenix
+  age.identityPaths = [
+    "/etc/ssh/ssh_host_ed25519_key"
+    "/home/snrx/.ssh/id_ed25519"
+  ];
 
   virtualisation.docker.enable = true;
   # Enable Flakes
@@ -117,6 +122,7 @@
     playerctl
     gnupg
     direnv
+    inputs.agenix.packages.${pkgs.system}.default
   ];
 
   # Enabled services

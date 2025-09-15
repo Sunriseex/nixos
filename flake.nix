@@ -12,7 +12,7 @@
     # Bootloader theme
     nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
 
-    # SDDM theme 
+    # SDDM theme
     sddm-sugar-candy-nix.url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
 
     # Neovim Nix Framework NVF
@@ -23,38 +23,49 @@
 
     # Declarative Flatpak
     nix-flatpak.url = "github:gmodena/nix-flatpak/latest";
+
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
   };
 
-  outputs = {
-    self, 
-    nixpkgs,
-    home-manager,
-    nvf,
-    sddm-sugar-candy-nix,
-    nix-flatpak,
-    ... 
-  }@inputs: {
-    nixosConfigurations = {
-      msi-laptop = nixpkgs.lib.nixosSystem {
-        specialArgs = {inherit inputs;};
-        modules = [
-          ./hosts/msi-laptop/configuration.nix
-          home-manager.nixosModules.default
-	        nvf.nixosModules.default
-          sddm-sugar-candy-nix.nixosModules.default
-          nix-flatpak.nixosModules.nix-flatpak
-        ];
+  outputs =
+    {
+      self,
+      nixpkgs,
+      home-manager,
+      nvf,
+      sddm-sugar-candy-nix,
+      nix-flatpak,
+      agenix,
+      ...
+    }@inputs:
+    {
+      nixosConfigurations = {
+        msi-laptop = nixpkgs.lib.nixosSystem {
+          specialArgs = { inherit inputs; };
+          modules = [
+            ./hosts/msi-laptop/configuration.nix
+            home-manager.nixosModules.default
+            nvf.nixosModules.default
+            sddm-sugar-candy-nix.nixosModules.default
+            nix-flatpak.nixosModules.nix-flatpak
+            agenix.nixosModules.default
+          ];
+        };
+        desktop-pc = nixpkgs.lib.nixosSystem {
+          specialArgs = { inherit inputs; };
+          modules = [
+            ./hosts/desktop-pc/configuration.nix
+            home-manager.nixosModules.default
+            nvf.nixosModules.default
+            sddm-sugar-candy-nix.nixosModules.default
+            nix-flatpak.nixosModules.nix-flatpak
+            agenix.nixosModules.default
+          ];
+        };
       };
-     desktop-pc = nixpkgs.lib.nixosSystem {
-	specialArgs = {inherit inputs;};
-	modules = [
-	./hosts/desktop-pc/configuration.nix
-	home-manager.nixosModules.default
-		nvf.nixosModules.default
-	sddm-sugar-candy-nix.nixosModules.default
-	nix-flatpak.nixosModules.nix-flatpak
-	];
-     }; 
-   };
- };
+    };
 }

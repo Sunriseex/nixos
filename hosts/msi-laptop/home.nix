@@ -1,4 +1,5 @@
 {
+  inputs,
   pkgs,
   ...
 }:
@@ -6,6 +7,7 @@
 {
   imports = [
     ../../modules/home-manager
+    inputs.agenix.homeManagerModules.default
   ];
 
   home = {
