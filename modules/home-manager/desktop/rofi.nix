@@ -14,7 +14,6 @@ in
     font = selected-font;
     modes = [
       "drun"
-      "emoji"
     ];
 
     extraConfig = {
