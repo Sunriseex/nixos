@@ -12,7 +12,10 @@ in
   programs.rofi = {
     enable = true;
     font = selected-font;
-    modes = [ "drun" ];
+    modes = [
+      "drun"
+      "emoji"
+    ];
 
     extraConfig = {
       show-icons = true;
@@ -101,9 +104,9 @@ in
       "element selected" = {
         background-color = nord1;
         border-radius = mkLiteral "6px";
-      };      
+      };
     };
-    
+
   };
-  
+
 }

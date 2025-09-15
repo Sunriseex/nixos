@@ -4,6 +4,9 @@ result-*
 
 # Ignore automatically generated direnv output
 .direnv
-
 .envrc
+
+ 
+
+*.age
 obsidian-backup.sh

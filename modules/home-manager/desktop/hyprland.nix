@@ -5,6 +5,7 @@
     wayland
     xwayland
     rofi
+    rofi-emoji
     # rofi-wayland
     hyprshot # Screenshot utility
     jq # JSON parser and manipulator
@@ -45,7 +46,7 @@
       ### MY PROGRAMS
       "$terminal" = "ghostty";
       "$browser" = "firefox";
-      "$editor" = "code .";
+      "$editor" = "code --wait";
       "$fileManager" = "nemo";
       "$menu" = "rofi -show drun";
 
@@ -171,7 +172,8 @@
         "$mainMod, RETURN, exec, $terminal"
         "$mainMod, TAB, workspace, m+1"
         "$mainMod, V, exec, $editor"
-        "$mainMod, B, exec, $browser "
+        "$mainMod, B, exec, $browser"
+        "$mainMod, A, exec, rofi -modi emoji -show emoji"
         "$mainMod, R, exec, pkill waybar && waybar"
         "$mainMod, Q, killactive,"
         "$mainMod, M, exit,"
