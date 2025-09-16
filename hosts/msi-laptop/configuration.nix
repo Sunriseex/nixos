@@ -81,6 +81,11 @@
     ];
   };
 
+  hardware.openrazer = {
+    enable = true;
+    users = [ "snrx" ];
+  };
+
   environment.sessionVariables = {
     XDG_SESSION_TYPE = "wayland";
     XDG_CURRENT_DESKTOP = "Hyprland";
@@ -123,8 +128,9 @@
     gnupg
     direnv
     inputs.agenix.packages.${pkgs.system}.default
+    openrazer-daemon
+    razer-cli
   ];
-
   # Enabled services
   services.openssh.enable = true;
 

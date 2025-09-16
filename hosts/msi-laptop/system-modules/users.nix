@@ -15,6 +15,7 @@
       "video"
       "input"
       "audio"
+      "plugdev"
     ];
     packages = with pkgs; [ ];
 

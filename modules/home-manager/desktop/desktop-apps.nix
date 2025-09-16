@@ -35,6 +35,8 @@
     bluez
     bluez-tools
     protonup-qt
+    polychromatic
+    razergenie
   ];
 
   services.flatpak.packages = [
