@@ -130,6 +130,7 @@
     inputs.agenix.packages.${pkgs.system}.default
     openrazer-daemon
     razer-cli
+    rofimoji
   ];
   # Enabled services
   services.openssh.enable = true;

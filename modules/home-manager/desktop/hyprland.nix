@@ -49,6 +49,7 @@
       "$editor" = "code --wait";
       "$fileManager" = "nemo";
       "$menu" = "rofi -show drun";
+      "$emoji" = "rofimoji";
 
       ### AUTOSTART
       exec-once = [
@@ -173,7 +174,7 @@
         "$mainMod, TAB, workspace, m+1"
         "$mainMod, V, exec, $editor"
         "$mainMod, B, exec, $browser"
-        "$mainMod, A, exec, rofi -modi emoji -show emoji"
+        "$mainMod, A, exec, $emoji"
         "$mainMod, R, exec, pkill waybar && waybar"
         "$mainMod, Q, killactive,"
         "$mainMod, M, exit,"

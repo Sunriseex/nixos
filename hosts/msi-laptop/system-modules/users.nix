@@ -17,7 +17,6 @@
       "audio"
       "plugdev"
     ];
-    packages = with pkgs; [ ];
 
     shell = pkgs.zsh;
 
