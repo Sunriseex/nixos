@@ -8,7 +8,9 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # bluez.enable = true;
+  };
+  services.pulseaudio = {
+    enable = false;
   };
 
   hardware.bluetooth.enable = true;
