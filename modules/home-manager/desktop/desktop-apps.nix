@@ -37,6 +37,8 @@
     protonup-qt
     polychromatic
     razergenie
+    ffmpeg
+    kooha
   ];
 
   services.flatpak.packages = [
