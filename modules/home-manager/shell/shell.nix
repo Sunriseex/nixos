@@ -45,7 +45,7 @@
       ggl = "google";
       gpt = "chatgpt";
       nix-rebuild = "sudo nixos-rebuild switch --flake ~/nixos#desktop-pc";
-      nix-build-check = "nix flake check ~/nixos";
+      nix-build-check = "sudo nix flake check ~/nixos";
       cd = "z";
     };
 

@@ -25,5 +25,6 @@
     ./apps/librewolf.nix
     # Development
     ./dev-tools.nix
+    ./go-dev.nix
   ];
 }

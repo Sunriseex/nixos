@@ -10,7 +10,6 @@
     nixfmt
     nixd
     nil
-    go
     fzf
     bat
     eza
