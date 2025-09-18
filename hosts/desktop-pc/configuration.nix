@@ -95,35 +95,11 @@
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-    vim
-    wget
-    git
     home-manager
-    starship
-    nix-prefetch
-    nix-prefetch-github
-    exfatprogs
-    shfmt
-    nixfmt
-    nixd
-    nil
-    docker
-    go
-    fzf
-    bat
-    eza
-    dust
-    ripgrep
-    fd
-    procs
-    nftables
-    playerctl
-    gnupg
-    direnv
     inputs.agenix.packages.${pkgs.system}.default
     openrazer-daemon
     razer-cli
-    rofimoji
+    nftables
   ];
   # Enabled services
   services.openssh.enable = true;

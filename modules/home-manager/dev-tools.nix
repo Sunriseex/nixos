@@ -23,5 +23,7 @@
     direnv
     rofimoji
     docker
+    nix-prefetch
+    nix-prefetch-github
   ];
 }

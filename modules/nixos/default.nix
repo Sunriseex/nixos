@@ -5,5 +5,6 @@
     ./graphics.nix
     ./sddm.nix
     ./steam.nix
+    ./razer.nix
   ];
 }
