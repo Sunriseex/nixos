@@ -104,5 +104,15 @@
   # Enabled services
   services.openssh.enable = true;
 
+  system.autoUpgrade = {
+    enable = true;
+    flake = "/home/snrx/nixos";
+    flags = [
+      "--update-input"
+      "nixpkgs"
+    ];
+    schedule = "weekly";
+  };
+
   system.stateVersion = "25.05"; # Do not change
 }
