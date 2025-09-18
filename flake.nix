@@ -1,5 +1,5 @@
 {
-  description = "Light3r's NixOS system config flake";
+  description = "Sunriseex's NixOS system config flake";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -9,26 +9,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Bootloader theme
     nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
-
-    # SDDM theme
     sddm-sugar-candy-nix.url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
-
-    # Neovim Nix Framework NVF
-    nvf = {
-      url = "github:notashelf/nvf";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # Declarative Flatpak
+    nvf.url = "github:notashelf/nvf";
     nix-flatpak.url = "github:gmodena/nix-flatpak/latest";
-
-    agenix = {
-      url = "github:ryantm/agenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
+    agenix.url = "github:ryantm/agenix";
   };
 
   outputs =
@@ -36,36 +21,17 @@
       self,
       nixpkgs,
       home-manager,
-      nvf,
-      sddm-sugar-candy-nix,
-      nix-flatpak,
-      agenix,
       ...
     }@inputs:
     {
       nixosConfigurations = {
-        msi-laptop = nixpkgs.lib.nixosSystem {
-          specialArgs = { inherit inputs; };
-          modules = [
-            ./hosts/msi-laptop/configuration.nix
-            home-manager.nixosModules.default
-            nvf.nixosModules.default
-            sddm-sugar-candy-nix.nixosModules.default
-            nix-flatpak.nixosModules.nix-flatpak
-            agenix.nixosModules.default
-          ];
-        };
         desktop-pc = nixpkgs.lib.nixosSystem {
           specialArgs = { inherit inputs; };
           modules = [
             ./hosts/desktop-pc/configuration.nix
-            home-manager.nixosModules.default
-            nvf.nixosModules.default
-            sddm-sugar-candy-nix.nixosModules.default
-            nix-flatpak.nixosModules.nix-flatpak
-            agenix.nixosModules.default
           ];
         };
+
       };
     };
 }

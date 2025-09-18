@@ -58,6 +58,8 @@
         "swaync"
         "hypridle"
         "v2rayN"
+        "Telegram"
+        "KeePassXC"
       ];
 
       ### ENVIRONMENT VARIABLES
@@ -179,7 +181,7 @@
         "$mainMod, Q, killactive,"
         "$mainMod, M, exit,"
         "$mainMod, E, exec, $fileManager"
-        "$mainMod, V, togglefloating,"
+        "$mainMod SHIFT, W, togglefloating,"
         "$mainMod, space, exec, $menu"
         "$mainMod, P, pseudo, # dwindle"
         "$mainMod, N, togglesplit, # dwindle"

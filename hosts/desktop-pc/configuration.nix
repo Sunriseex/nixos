@@ -1,29 +1,59 @@
-{ config, pkgs, inputs, ... }:
+{
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
-  imports = [ 
-      ./hardware-configuration.nix
-      ./system-modules
-      ../../modules/nixos
-      inputs.home-manager.nixosModules.default 
-    ];
+  imports = [
+    ./hardware-configuration.nix
+    ./system-modules
+    ../../modules/nixos
+    inputs.home-manager.nixosModules.default
+    inputs.nvf.nixosModules.default
+    inputs.sddm-sugar-candy-nix.nixosModules.default
+    inputs.nix-flatpak.nixosModules.nix-flatpak
+    inputs.agenix.nixosModules.default
+  ];
+  # Agenix
+  age.identityPaths = [
+    "/etc/ssh/ssh_host_ed25519_key"
+    "/etc/ssh/agenix_key"
+  ];
+  # docker
+  virtualisation.docker.enable = true;
 
   # Enable Flakes
-  nix.settings.experimental-features = [ "nix-command" "flakes"];
+  nix.settings.experimental-features = [
+    "nix-command"
+    "flakes"
+  ];
 
   # Home Manager
   home-manager = {
-    extraSpecialArgs = { inherit inputs; }; # Passes inputs to HM modules
-    useGlobalPkgs = true; # NixOS and HM use the same global packages
+    extraSpecialArgs = { inherit inputs; };
+    useGlobalPkgs = true;
     users = {
-      "snrx" = { 
+      "snrx" = {
         imports = [
-          ../../hosts/msi-laptop/home.nix
-          #inputs.self.outputs.homeManagerModules.default
+          ../../hosts/desktop-pc/home.nix
         ];
       };
     };
     backupFileExtension = "backup";
+  };
+
+  # ZSH
+  programs.zsh.enable = true;
+
+  # SSH
+  programs.ssh.startAgent = true;
+
+  # GPG
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = false;
+    pinentryPackage = pkgs.pinentry-gnome3;
   };
 
   # Automatize garbage collection
@@ -32,6 +62,7 @@
     dates = "3days";
   };
 
+  # Flatpak
   services.flatpak = {
     enable = true;
     update.auto = {
@@ -40,50 +71,61 @@
     };
   };
 
-
-  # Enables Hyprland at system-level to avoid troubles with SDDM
+  # Enables Hyprland at system-level
   programs.hyprland.enable = true;
 
   # Fix SDDM not starting any DE session
   services.dbus.packages = with pkgs; [ dconf ];
-  
-  # Video Acceleration and OpenGL
-  hardware.graphics = {
+
+  # OpenRazer
+  hardware.openrazer = {
     enable = true;
-    extraPackages = with pkgs; [
-      intel-media-driver
-      libvdpau-va-gl
-    ];
+    users = [ "snrx" ];
   };
 
   environment.sessionVariables = {
     XDG_SESSION_TYPE = "wayland";
     XDG_CURRENT_DESKTOP = "Hyprland";
-    # Prevent cursor from becoming invisible
     WLR_NO_HARDWARE_CURSORS = "1";
-    # Hint electron apps to use Wayland
     NIXOS_OZONE_WL = "1";
-    LIBVA_DRIVER_NAME = "nvidia";
-    GBM_BACKEND = "nvidia-drm";
-    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
   };
 
-   # Allow unfree packages
+  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
-     vim
-     wget
-     git
-     home-manager
-     starship
-     nix-prefetch
-     nix-prefetch-github
-     exfatprogs
+    vim
+    wget
+    git
+    home-manager
+    starship
+    nix-prefetch
+    nix-prefetch-github
+    exfatprogs
+    shfmt
+    nixfmt
+    nixd
+    nil
+    docker
+    go
+    fzf
+    bat
+    eza
+    dust
+    ripgrep
+    fd
+    procs
+    nftables
+    playerctl
+    gnupg
+    direnv
+    inputs.agenix.packages.${pkgs.system}.default
+    openrazer-daemon
+    razer-cli
+    rofimoji
   ];
-
   # Enabled services
   services.openssh.enable = true;
 
-  system.stateVersion = "25.11"; # Do not change
+  system.stateVersion = "25.05"; # Do not change
 }

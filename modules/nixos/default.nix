@@ -2,7 +2,7 @@
   imports = [
     ./bootloader.nix
     ./neovim.nix
-    ./nvidia.nix
+    ./graphics.nix
     ./sddm.nix
     ./steam.nix
   ];

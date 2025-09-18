@@ -8,5 +8,6 @@
     ./users.nix
     ./home-assistant.nix
     ./zsh.nix
+    ./cpu.nix
   ];
 }

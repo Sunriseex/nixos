@@ -44,7 +44,8 @@
       yt = "youtube";
       ggl = "google";
       gpt = "chatgpt";
-      nix-rebuild = "sudo nixos-rebuild switch --flake ~/nixos#msi-laptop";
+      nix-rebuild = "sudo nixos-rebuild switch --flake ~/nixos#desktop-pc";
+      nix-build-check = "nix flake check ~/nixos";
       cd = "z";
     };
 
