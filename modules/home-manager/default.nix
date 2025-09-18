@@ -23,5 +23,7 @@
     # Apps
     ./apps/firefox.nix
     ./apps/librewolf.nix
+    # Development
+    ./dev-tools.nix
   ];
 }

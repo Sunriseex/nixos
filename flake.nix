@@ -21,6 +21,10 @@
       self,
       nixpkgs,
       home-manager,
+      nvf,
+      sddm-sugar-candy-nix,
+      nix-flatpak,
+      agenix,
       ...
     }@inputs:
     {

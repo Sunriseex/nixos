@@ -30,6 +30,7 @@
   ];
 
   # Home Manager
+
   home-manager = {
     extraSpecialArgs = { inherit inputs; };
     useGlobalPkgs = true;
