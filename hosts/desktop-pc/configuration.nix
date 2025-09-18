@@ -111,7 +111,8 @@
       "--update-input"
       "nixpkgs"
     ];
-    schedule = "weekly";
+    dates = "weekly";
+    allowReboot = false;
   };
 
   system.stateVersion = "25.05"; # Do not change
