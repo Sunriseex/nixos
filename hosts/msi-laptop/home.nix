@@ -25,6 +25,29 @@
     atuin
   ];
 
+  xdg = {
+    enable = true;
+    mimeApps = {
+      defaultApplications = {
+        # Images
+        "image/png" = [ "qimgv.desktop" ];
+        "image/jpeg" = [ "qimgv.desktop" ];
+        "image/gif" = [ "qimgv.desktop" ];
+        "image/bmp" = [ "qimgv.desktop" ];
+        "image/svg+xml" = [ "qimgv.desktop" ];
+        "image/webp" = [ "qimgv.desktop" ];
+
+        # Videos
+        "video/mp4" = [ "mpv.desktop" ];
+        "video/x-msvideo" = [ "mpv.desktop" ];
+        "video/x-matroska" = [ "mpv.desktop" ];
+        "video/quicktime" = [ "mpv.desktop" ];
+        "video/webm" = [ "mpv.desktop" ];
+        "video/x-ms-wmv" = [ "mpv.desktop" ];
+      };
+    };
+  };
+
   home.sessionVariables = {
     TERMINAL = "ghostty";
     EDITOR = "code --wait";
