@@ -5,8 +5,8 @@
     executable = true;
     text = ''
       #!/bin/sh
-      API_KEY="''${OPENWEATHER_API_KEY}"
-      CITY="''${OPENWEATHER_CITY}"
+      API_KEY="af3ae71b2d4279e59e4f1c9a94057d64"
+      CITY="Moscow"
       URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
 
       WEATHER_JSON=$(curl -s "$URL")
@@ -167,7 +167,7 @@
         clock = {
           interval = 1;
           timezone = "Europe/Moscow";
-          format = " {:%H:%M:%S}";
+          format = " {:%I:%M %p}";
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
         };
@@ -279,10 +279,12 @@
       #clock:hover,
       #custom-lock:hover,
       #custom-power:hover {
-        background-color: rgba(70, 75, 90, 0.9);
+        background-color: rgba(255, 107, 53, 0.15);
+        color: #FFFFFF;
+        border: 1px solid #FF6B35;
+        box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
       }
 
-      /* Рабочие пространства */
       #workspaces button {
         background: transparent;
         border: none;
@@ -298,8 +300,10 @@
       }
 
       #workspaces button.active {
-        background-color: #151B27;
-        color: #ffffff;
+        background-color: rgba(255, 107, 53, 0.15);
+        color: #FFFFFF;
+        border: 1px solid #FF6B35;
+        box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
       }
     '';
   };
