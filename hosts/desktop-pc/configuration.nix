@@ -100,6 +100,7 @@
     openrazer-daemon
     razer-cli
     nftables
+    jq
   ];
   # Enabled services
   services.openssh.enable = true;

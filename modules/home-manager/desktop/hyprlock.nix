@@ -60,6 +60,27 @@
           halign = "center";
           valign = "center";
         }
+        # Keyboard Layout (NEW)
+        {
+          monitor = "";
+          text = ''
+            cmd[update:500] 
+              layout=$(hyprctl devices -j | jq -r '.keyboards[] | select(.name == "razer-razer-huntsman-v2-1") | .active_keymap')
+                if [ "$layout" = "Russian" ]; then
+                  echo "RU"
+                elif [ "$layout" = "English (US)" ]; then
+                  echo "EN"
+                else
+                  echo "$layout"
+                fi
+          '';
+          color = "rgba(216, 222, 233, 0.80)";
+          font_size = 16;
+          font_family = "SF Pro Display Bold";
+          position = "34, -180";
+          halign = "center";
+          valign = "center";
+        }
       ];
 
       # USER-BOX
