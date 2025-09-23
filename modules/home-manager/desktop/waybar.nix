@@ -1,5 +1,7 @@
-{ ... }:
-
+{ pkgs, ... }:
+let
+  payments-cli = pkgs.callPackage ../../../scripts/payments-cli/default.nix { };
+in
 {
   home.file.".config/waybar/scripts/weather.sh" = {
     executable = true;
@@ -359,6 +361,7 @@
         spacing = 0;
         output = "DVI-D-1";
 
+        modules-left = [ "custom/payments" ];
         modules-center = [
           "custom/pomodoro"
           "hyprland/workspaces"
@@ -379,6 +382,15 @@
           "on-click" = "~/.config/waybar/scripts/pomodoro.sh toggle";
           "on-click-right" = "~/.config/waybar/scripts/pomodoro.sh reset";
           "tooltip" = false;
+        };
+
+        "custom/payments" = {
+          "format" = "{}";
+          "exec" = "${payments-cli}/bin/payments-cli";
+          "interval" = 60;
+          "on-click" = "${payments-cli}/bin/payments-cli paid";
+          "on-click-right" = "${payments-cli}/bin/payments-cli list";
+          "tooltip" = true;
         };
 
         clock = {
@@ -447,11 +459,11 @@
         border-bottom-right-radius: 10px;
       }
 
-      #tray, #pulseaudio, #pulseaudio\\#microphone, #custom-weather, #clock, #custom-lock, #custom-power {
+      #tray, #pulseaudio, #pulseaudio\\#microphone, #custom-weather, #clock, #custom-power {
         background-color: #323844;
         margin: 6px 0 0 0;
         padding: 4px 8px;
-        border-radius: 10px;
+        border-radius: 0;
       }
 
       #tray {
@@ -483,7 +495,6 @@
       #pulseaudio\\#microphone:hover,
       #custom-weather:hover,
       #clock:hover,
-      #custom-lock:hover,
       #custom-power:hover {
         background-color: rgba(255, 107, 53, 0.15);
         color: #FFFFFF;
@@ -537,6 +548,13 @@
         border-radius: 0;
       }
 
+      #secondaryBar #custom-payments {
+        background-color: #323844;
+        margin: 6px 0 0 0;
+        padding: 4px 8px;
+        border-radius: 0;
+      }
+
       #secondaryBar #clock {
         background-color: #323844;
         margin: 6px 6px 0 0;
@@ -547,6 +565,7 @@
 
       #secondaryBar #workspaces:hover,
       #secondaryBar #custom-pomodoro:hover,
+      #secondaryBar #custom-payments:hover,
       #secondaryBar #clock:hover {
         background-color: rgba(255, 107, 53, 0.15);
         color: #FFFFFF;
@@ -580,5 +599,7 @@
         box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
       }
     '';
+
   };
+  home.packages = [ payments-cli ];
 }

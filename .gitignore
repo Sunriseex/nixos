@@ -7,6 +7,6 @@ result-*
 .envrc
 
  
-
+payments.json
 *.age
 obsidian-backup.sh
