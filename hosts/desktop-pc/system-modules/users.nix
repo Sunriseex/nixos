@@ -16,6 +16,7 @@
       "input"
       "audio"
       "plugdev"
+      "docker"
     ];
 
     shell = pkgs.zsh;

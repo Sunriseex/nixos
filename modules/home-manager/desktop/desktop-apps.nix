@@ -39,6 +39,7 @@
     razergenie
     ffmpeg
     kooha
+    mousai
   ];
 
   services.flatpak.packages = [
