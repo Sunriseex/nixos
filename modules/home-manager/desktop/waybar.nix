@@ -3,6 +3,90 @@ let
   payments-cli = pkgs.callPackage ../../../scripts/payments-cli/default.nix { };
 in
 {
+  home.file.".local/bin/add-payment" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      echo "Добавление нового платежа"
+      echo "========================"
+
+      read -p "Название: " name
+      read -p "Сумма в рублях (например: 349.90): " amount
+
+      echo "Выберите тип:"
+      echo "1) По дате"
+      echo "2) По количеству дней"
+      read -p "Ваш выбор (1 или 2): " choice
+
+      case $choice in
+          1)
+              read -p "Дата (ГГГГ-ММ-ДД): " date
+              days=""
+              ;;
+          2)
+              read -p "Количество дней: " days
+              date=""
+              ;;
+          *)
+              echo "Неверный выбор"
+              exit 1
+              ;;
+      esac
+
+      echo "Типы: monthly, yearly, one-time"
+      read -p "Тип платежа [monthly]: " type
+      type=''${type:-monthly}
+
+      echo "Выберите категорию:"
+      echo "1) subscriptions - Подписки"
+      echo "2) utilities - Коммунальные услуги"
+      echo "3) hosting - Хостинг"
+      echo "4) food - Еда"
+      echo "5) rent - Аренда"
+      echo "6) transport - Транспорт"
+      echo "7) entertainment - Развлечения"
+      echo "8) healthcare - Здоровье"
+      echo "9) other - Другое"
+      read -p "Категория [subscriptions]: " category_num
+
+      case $category_num in
+          1) category="subscriptions" ;;
+          2) category="utilities" ;;
+          3) category="hosting" ;;
+          4) category="food" ;;
+          5) category="rent" ;;
+          6) category="transport" ;;
+          7) category="entertainment" ;;
+          8) category="healthcare" ;;
+          9) category="other" ;;
+          *) category="subscriptions" ;;
+      esac
+
+      echo "Выберите счет оплаты:"
+      echo "1) Liabilities:YandexPay"
+      echo "2) Liabilities:Tinkoff"
+      echo "3) Liabilities:AlfaBank"
+      echo "4) Assets:Cash"
+      echo "5) Assets:TinkoffCard"
+      read -p "Счет [1]: " account_num
+
+      case $account_num in
+          1) ledger_account="Liabilities:YandexPay" ;;
+          2) ledger_account="Liabilities:Tinkoff" ;;
+          3) ledger_account="Liabilities:AlfaBank" ;;
+          4) ledger_account="Assets:Cash" ;;
+          5) ledger_account="Assets:TinkoffCard" ;;
+          *) ledger_account="Liabilities:YandexPay" ;;
+      esac
+
+      if [ -n "$days" ]; then
+          payments-cli add --name "$name" --amount "$amount" --days "$days" --type "$type" --category "$category" --ledger-account "$ledger_account"
+      else
+          payments-cli add --name "$name" --amount "$amount" --date "$date" --type "$type" --category "$category" --ledger-account "$ledger_account"
+      fi
+    '';
+  };
+
   home.file.".config/waybar/scripts/weather.sh" = {
     executable = true;
     text = ''
@@ -45,11 +129,10 @@ in
       STATE_FILE="/tmp/pomodoro_state"
       PAUSE_FILE="/tmp/pomodoro_pause"
       COUNTER_FILE="/tmp/pomodoro_counter"
-      DURATION_WORK=1500  # 25 минут
-      DURATION_BREAK=300   # 5 минут
-      DURATION_LONG_BREAK=900  # 15 минут после 4 циклов
+      DURATION_WORK=1500
+      DURATION_BREAK=300
+      DURATION_LONG_BREAK=900
 
-      # Функция для воспроизведения звука
       play_sound() {
         local sound_type=$1
         local sound_file=""
@@ -69,11 +152,9 @@ in
             ;;
         esac
         
-        # Проверяем доступность звуковых файлов и плееров
         if [ -f "$sound_file" ]; then
-          # Пробуем разные плееры
           if command -v paplay >/dev/null 2>&1; then
-            paplay "$sound_file" --volume=30000 &  # 30% громкости
+            paplay "$sound_file" --volume=30000 &
           elif command -v aplay >/dev/null 2>&1; then
             aplay "$sound_file" & 2>/dev/null
           elif command -v mpv >/dev/null 2>&1; then
@@ -84,7 +165,6 @@ in
         fi
       }
 
-      # Функция для отправки уведомления со звуком
       notify_with_sound() {
         local title="$1"
         local message="$2"
@@ -94,7 +174,6 @@ in
         play_sound "$sound_type"
       }
 
-      # Читаем счетчик циклов
       if [ -f "$COUNTER_FILE" ]; then
         CYCLES=$(cat "$COUNTER_FILE")
       else
@@ -104,15 +183,12 @@ in
       case "$1" in
         "toggle")
           if [ -f "$STATE_FILE" ]; then
-            # Если таймер активен, ставим на паузу
             if [ -f "$PAUSE_FILE" ]; then
-              # Если уже на паузе, возобновляем
               read paused_mode paused_remaining < "$PAUSE_FILE"
               echo "$paused_mode $(( $(date +%s) + paused_remaining ))" > "$STATE_FILE"
               rm -f "$PAUSE_FILE"
               notify_with_sound "Pomodoro" "Таймер возобновлен" "work_start"
             else
-              # Ставим на паузу
               read mode end_time < "$STATE_FILE"
               remaining=$(( end_time - $(date +%s) ))
               if [ "$remaining" -gt 0 ]; then
@@ -124,14 +200,11 @@ in
               fi
             fi
           else
-            # Если таймер не активен, запускаем новый
             if [ -f "$PAUSE_FILE" ]; then
-              # Если есть состояние паузы, используем его
               read paused_mode paused_remaining < "$PAUSE_FILE"
               echo "$paused_mode $(( $(date +%s) + paused_remaining ))" > "$STATE_FILE"
               rm -f "$PAUSE_FILE"
             else
-              # Запускаем новый таймер (рабочий интервал)
               echo "work $(( $(date +%s) + $DURATION_WORK ))" > "$STATE_FILE"
               notify_with_sound "Pomodoro" "Рабочий интервал начался (25 минут)" "work_start"
             fi
@@ -144,51 +217,41 @@ in
           ;;
       esac
 
-      # Отображение состояния
       if [ -f "$STATE_FILE" ]; then
         read mode end_time < "$STATE_FILE"
         current_time=$(date +%s)
         remaining=$(( end_time - current_time ))
         
-        # Проверяем, истекло ли время
         if [ "$remaining" -le 0 ]; then
           if [ "$mode" = "work" ]; then
-            # Завершился рабочий интервал
             CYCLES=$((CYCLES + 1))
             echo "$CYCLES" > "$COUNTER_FILE"
             
-            # Определяем тип перерыва
             if [ $((CYCLES % 4)) -eq 0 ]; then
-              # Каждый 4-й цикл - длинный перерыв
               break_duration=$DURATION_LONG_BREAK
               notify_with_sound "Pomodoro" "Рабочий интервал завершен! Время длинного перерыва (15 минут). Цикл: $CYCLES" "long_break_start"
             else
-              # Обычный перерыв
               break_duration=$DURATION_BREAK
               notify_with_sound "Pomodoro" "Рабочий интервал завершен! Время перерыва (5 минут). Цикл: $CYCLES" "break_start"
             fi
             
-            # Запускаем перерыв
             echo "break $(( current_time + break_duration ))" > "$STATE_FILE"
             mode="break"
             remaining=$break_duration
             
           else
-            # Завершился перерыв
             if [ $((CYCLES % 4)) -eq 0 ]; then
               notify_with_sound "Pomodoro" "Длинный перерыв завершен! Возвращайтесь к работе. Цикл: $CYCLES" "work_start"
             else
               notify_with_sound "Pomodoro" "Перерыв завершен! Возвращайтесь к работе. Цикл: $CYCLES" "work_start"
             fi
             
-            # Автоматически запускаем следующий рабочий интервал
             echo "work $(( current_time + $DURATION_WORK ))" > "$STATE_FILE"
             mode="work"
             remaining=$DURATION_WORK
           fi
         fi
 
-        # Отображаем оставшееся время
         minutes=$(( remaining / 60 ))
         seconds=$(( remaining % 60 ))
         
@@ -203,7 +266,6 @@ in
         fi
         
       elif [ -f "$PAUSE_FILE" ]; then
-        # Таймер на паузе
         read mode remaining < "$PAUSE_FILE"
         minutes=$(( remaining / 60 ))
         seconds=$(( remaining % 60 ))
@@ -211,7 +273,6 @@ in
         printf "󰏤 %02d:%02d (%d)\n" $minutes $seconds $CYCLES
         
       else
-        # Таймер не активен
         printf "󰔛 --:-- (%d)\n" $CYCLES
       fi
     '';
@@ -390,7 +451,7 @@ in
           "interval" = 60;
           "on-click" = "${payments-cli}/bin/payments-cli paid";
           "on-click-right" = "${payments-cli}/bin/payments-cli list";
-          "tooltip" = true;
+          "tooltip" = false;
         };
 
         clock = {
@@ -400,9 +461,7 @@ in
           tooltip = true;
           tooltip-format = "{:L%A %d/%m/%Y}";
         };
-
       };
-
     };
     style = ''
       * {
@@ -562,7 +621,6 @@ in
         border-radius: 0 10px 10px 0;
       }
 
-
       #secondaryBar #workspaces:hover,
       #secondaryBar #custom-pomodoro:hover,
       #secondaryBar #custom-payments:hover,
@@ -576,7 +634,6 @@ in
         box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
         transition: border-bottom 0.6s ease-in-out;
       }
-
 
       #secondaryBar #workspaces button {
         background: transparent;
@@ -599,7 +656,6 @@ in
         box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
       }
     '';
-
   };
   home.packages = [ payments-cli ];
 }
