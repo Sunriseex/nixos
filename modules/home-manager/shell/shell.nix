@@ -46,6 +46,8 @@
       gpt = "chatgpt";
       nix-rebuild = "sudo nixos-rebuild switch --flake ~/nixos#desktop-pc";
       nix-build-check = "sudo nix flake check ~/nixos";
+      nix-update = "nix flake update";
+      nix-clear = "sudo nix-collect-garbage -d";
       cd = "z";
     };
 
