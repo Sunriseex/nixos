@@ -230,12 +230,7 @@ func displayWidget() {
 		icon = "🟢"
 	}
 
-	intervalInfo := ""
-	if payment.DaysInterval > 0 {
-		intervalInfo = fmt.Sprintf(" [%dд]", payment.DaysInterval)
-	}
-
-	fmt.Printf("%s %s %s₽ · %dд%s\n", icon, name, amount, days, intervalInfo)
+	fmt.Printf("%s %s %s₽ · %dд\n", icon, name, amount, days)
 }
 
 func markPaid() {
