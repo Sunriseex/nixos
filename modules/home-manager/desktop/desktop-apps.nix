@@ -40,6 +40,7 @@
     ffmpeg
     kooha
     mousai
+    yandex-music
   ];
 
   services.flatpak.packages = [
