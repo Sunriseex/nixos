@@ -450,7 +450,8 @@ in
           "exec" = "${payments-cli}/bin/payments-cli";
           "interval" = 60;
           "on-click" = "${payments-cli}/bin/payments-cli paid";
-          "on-click-right" = "${payments-cli}/bin/payments-cli list";
+          "on-click-right" =
+            "sh -c '${payments-cli}/bin/payments-cli list | head -n 10 | tr \"\\n\" \"\\r\" | xargs -0 notify-send \"Список платежей\"'";
           "tooltip" = false;
         };
 

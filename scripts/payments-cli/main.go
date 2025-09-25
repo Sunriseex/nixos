@@ -227,7 +227,7 @@ func displayWidget() {
 	} else if days <= 7 {
 		icon = "🟡"
 	} else {
-		icon = "💳"
+		icon = "🟢"
 	}
 
 	intervalInfo := ""
@@ -293,9 +293,12 @@ func listPayments() {
 	}
 
 	var activePayments []Payment
+	totalAmount := 0
+
 	for _, p := range data.Payments {
 		if p.PaymentDate == "" {
 			activePayments = append(activePayments, p)
+			totalAmount += p.Amount
 		}
 	}
 
@@ -308,27 +311,67 @@ func listPayments() {
 		return daysUntil(activePayments[i].DueDate) < daysUntil(activePayments[j].DueDate)
 	})
 
-	fmt.Println("Активные платежи:")
+	var overdue, urgent, upcoming []Payment
+
 	for _, p := range activePayments {
 		days := daysUntil(p.DueDate)
-		status := fmt.Sprintf("%dд", days)
 		if days < 0 {
-			status = fmt.Sprintf("просрочено %dд", -days)
+			overdue = append(overdue, p)
+		} else if days <= 7 {
+			urgent = append(urgent, p)
+		} else {
+			upcoming = append(upcoming, p)
 		}
-
-		intervalInfo := ""
-		if p.DaysInterval > 0 {
-			intervalInfo = fmt.Sprintf(" [%dд]", p.DaysInterval)
-		}
-
-		ledgerInfo := ""
-		if p.LedgerAccount != "" {
-			ledgerInfo = fmt.Sprintf(" [%s]", p.LedgerAccount)
-		}
-
-		amountRubles := formatRubles(p.Amount)
-		fmt.Printf("• %s: %s₽ (%s) [%s]%s%s\n", p.Name, amountRubles, status, p.Type, intervalInfo, ledgerInfo)
 	}
+
+	fmt.Println("АКТИВНЫЕ ПЛАТЕЖИ:")
+	fmt.Println("─────────────────")
+	fmt.Println()
+
+	if len(overdue) > 0 {
+		fmt.Println("🔴 СРОЧНО (просрочено):")
+		for _, p := range overdue {
+			days := daysUntil(p.DueDate)
+			amountRubles := formatRubles(p.Amount)
+			fmt.Printf("   • %s: %s₽ (%d дней) [%s]", p.Name, amountRubles, -days, p.Type)
+			if p.LedgerAccount != "" {
+				fmt.Printf(" [%s]", p.LedgerAccount)
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+
+	if len(urgent) > 0 {
+		fmt.Println("🟡 БЛИЖАЙШИЕ:")
+		for _, p := range urgent {
+			days := daysUntil(p.DueDate)
+			amountRubles := formatRubles(p.Amount)
+			fmt.Printf("   • %s: %s₽ (%d дней) [%s]", p.Name, amountRubles, days, p.Type)
+			if p.LedgerAccount != "" {
+				fmt.Printf(" [%s]", p.LedgerAccount)
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+
+	if len(upcoming) > 0 {
+		fmt.Println("🟢 ОЖИДАЕМЫЕ:")
+		for _, p := range upcoming {
+			days := daysUntil(p.DueDate)
+			amountRubles := formatRubles(p.Amount)
+			fmt.Printf("   • %s: %s₽ (%d дней) [%s]", p.Name, amountRubles, days, p.Type)
+			if p.LedgerAccount != "" {
+				fmt.Printf(" [%s]", p.LedgerAccount)
+			}
+			fmt.Println()
+		}
+		fmt.Println()
+	}
+
+	totalRubles := formatRubles(totalAmount)
+	fmt.Printf("📊 ИТОГО: %d платежей на %s₽\n", len(activePayments), totalRubles)
 }
 
 func addPayment() {
