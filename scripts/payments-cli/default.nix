@@ -1,15 +1,26 @@
-{ pkgs, lib, ... }:
+{ pkgs }:
 
-pkgs.buildGoModule rec {
+pkgs.buildGoModule {
   pname = "payments-cli";
-  version = "1.0.0";
+  version = "0.4.2";
 
   src = ./.;
 
   vendorHash = null;
 
-  meta = with lib; {
-    description = "Payment tracker widget for Waybar";
+  subPackages = [
+    "cmd/payments-cli"
+    "cmd/deposit-manager"
+  ];
+
+  buildInputs = with pkgs; [
+    jq
+    bc
+  ];
+
+  meta = with pkgs.lib; {
+    description = "CLI for managing payments and deposits with Ledger integration";
     license = licenses.mit;
+    maintainers = with maintainers; [ ];
   };
 }

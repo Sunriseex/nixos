@@ -6,7 +6,7 @@ result-*
 .direnv
 .envrc
 
- 
+.env
 payments.json
 *.age
 obsidian-backup.sh

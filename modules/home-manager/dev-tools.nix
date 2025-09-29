@@ -3,6 +3,7 @@
 
   home.packages = with pkgs; [
     vim
+    gcc
     wget
     git
     starship

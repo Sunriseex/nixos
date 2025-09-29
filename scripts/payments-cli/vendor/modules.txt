@@ -1,0 +1,6 @@
+# github.com/joho/godotenv v1.5.1
+## explicit; go 1.12
+github.com/joho/godotenv
+# gopkg.in/telebot.v4 v4.0.0-beta.5
+## explicit; go 1.16
+gopkg.in/telebot.v4
