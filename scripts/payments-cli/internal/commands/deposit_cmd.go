@@ -12,11 +12,17 @@ import (
 	"github.com/sunriseex/payments-cli/internal/storage"
 	"github.com/sunriseex/payments-cli/pkg/calculator"
 	"github.com/sunriseex/payments-cli/pkg/utils"
+	"github.com/sunriseex/payments-cli/pkg/validation"
 )
 
 func DepositCreate(name, bank, depositType string, amount int, interestRate float64, termMonths int, promoRate *float64, promoEndDate string) error {
+	validator := validation.NewDepositValidator()
+	if err := validator.ValidateCreateRequest(name, bank, depositType, amount, interestRate, termMonths, promoRate, promoEndDate); err != nil {
+		return fmt.Errorf("validation error: %v", err)
+	}
+
 	deposit := &models.Deposit{
-		Name:          name,
+		Name:          strings.TrimSpace(name),
 		Bank:          bank,
 		Type:          depositType,
 		Amount:        amount,
@@ -38,10 +44,14 @@ func DepositCreate(name, bank, depositType string, amount int, interestRate floa
 		deposit.TermMonths = termMonths
 		endDate, err := calculator.CalculateMaturityDate(deposit.StartDate, termMonths)
 		if err != nil {
-			return err
+			return fmt.Errorf("error calculating maturity date: %v", err)
 		}
 		deposit.EndDate = endDate
 		deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(deposit.StartDate)
+	}
+
+	if err := validator.Validate(deposit); err != nil {
+		return fmt.Errorf("deposit validation error: %v", err)
 	}
 
 	if err := storage.CreateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
@@ -52,6 +62,15 @@ func DepositCreate(name, bank, depositType string, amount int, interestRate floa
 	if promoRate != nil {
 		fmt.Printf("   Промо-ставка: %.2f%% (до %s)\n", *promoRate, promoEndDate)
 	}
+
+	amountRubles := float64(amount) / 100.0
+	fmt.Printf("   Сумма: %.2f руб.\n", amountRubles)
+	fmt.Printf("   Базовая ставка: %.2f%%\n", interestRate)
+	if deposit.Type == "term" {
+		fmt.Printf("   Срок: %d месяцев\n", termMonths)
+		fmt.Printf("   Дата окончания: %s\n", deposit.EndDate)
+	}
+
 	return nil
 }
 
@@ -97,11 +116,19 @@ func DepositList() error {
 }
 
 func DepositTopUp(depositID string, amount int) error {
+	if amount <= 0 {
+		return fmt.Errorf("amount must be positive")
+	}
+
+	if amount > 10000000 {
+		return fmt.Errorf("amount too large for single top-up: %.2f rub", float64(amount)/100.0)
+	}
+
 	if err := storage.UpdateDepositAmount(depositID, amount, config.AppConfig.DepositsDataPath); err != nil {
 		return fmt.Errorf("error topup deposit: %v", err)
 	}
 
-	fmt.Printf("✅ Вклад успешно пополнен на %d руб.\n", amount)
+	fmt.Printf("✅ Вклад успешно пополнен на %.2f руб.\n", float64(amount)/100.0)
 	return nil
 }
 
@@ -141,6 +168,10 @@ func DepositUpdate(depositID string) error {
 		return fmt.Errorf("only term deposits can be updated (prolonged)")
 	}
 
+	if !calculator.CanBeProlonged(*deposit) {
+		return fmt.Errorf("deposit cannot be prolonged yet. Can be prolonged within 7 days before end date")
+	}
+
 	today := time.Now().Format("2006-01-02")
 
 	deposit.StartDate = today
@@ -152,6 +183,11 @@ func DepositUpdate(depositID string) error {
 	deposit.EndDate = endDate
 
 	deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(today)
+
+	validator := validation.NewDepositValidator()
+	if err := validator.Validate(deposit); err != nil {
+		return fmt.Errorf("validation error after update: %v", err)
+	}
 
 	if err := storage.UpdateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
 		return fmt.Errorf("error updating deposit: %v", err)
@@ -225,10 +261,20 @@ func DepositAccrueInterest() error {
 }
 
 func ParseRubles(amountStr string) (int, error) {
+	amountStr = strings.Replace(amountStr, ",", ".", -1)
 	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
 		return 0, fmt.Errorf("неверный формат суммы: %v", err)
 	}
+
+	if amount <= 0 {
+		return 0, fmt.Errorf("сумма должна быть положительной")
+	}
+
+	if amount > 1000000 {
+		return 0, fmt.Errorf("сумма слишком большая: %.2f руб. Максимум: 1,000,000 руб.", amount)
+	}
+
 	return int(amount * 100), nil
 }
 
@@ -244,12 +290,16 @@ func ParseDays(daysStr string) (int, error) {
 }
 
 func ParseRate(rateStr string) (float64, error) {
+	rateStr = strings.Replace(rateStr, ",", ".", -1)
 	rate, err := strconv.ParseFloat(rateStr, 64)
 	if err != nil {
 		return 0, fmt.Errorf("неверный формат процентной ставки: %v", err)
 	}
 	if rate <= 0 {
 		return 0, fmt.Errorf("процентная ставка должна быть положительной")
+	}
+	if rate > 100 {
+		return 0, fmt.Errorf("процентная ставка не может превышать 100%")
 	}
 	return rate, nil
 }
@@ -261,6 +311,9 @@ func ParseTerm(termStr string) (int, error) {
 	}
 	if term <= 0 {
 		return 0, fmt.Errorf("срок должен быть положительным")
+	}
+	if term > 60 {
+		return 0, fmt.Errorf("срок не может превышать 60 месяцев")
 	}
 	return term, nil
 }
