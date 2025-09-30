@@ -17,10 +17,6 @@ func CalculateIncome(deposit models.Deposit, days int) *big.Float {
 
 	effectiveRate := getEffectiveRateBig(deposit)
 
-	if deposit.Bank == "Яндекс Банк" || deposit.Bank == "Yandex" {
-		return calculateDailyCapitalization(amount, effectiveRate, days, 360)
-	}
-
 	switch deposit.Capitalization {
 	case "daily":
 		return calculateDailyCapitalization(amount, effectiveRate, days, 365)

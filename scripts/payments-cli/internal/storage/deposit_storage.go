@@ -1,44 +1,34 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/models"
+	"github.com/sunriseex/payments-cli/pkg/errors"
+	"github.com/sunriseex/payments-cli/pkg/security"
 )
 
 func LoadDeposits(dataPath string) (*models.DepositsData, error) {
 	expandedPath := ExpandPath(dataPath)
-	if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
-		return &models.DepositsData{Deposits: []models.Deposit{}}, nil
+	var data models.DepositsData
+
+	if err := security.SafeReadJSON(expandedPath, &data); err != nil {
+		return nil, errors.NewStorageError("чтение файла вкладов", err)
 	}
-	file, err := os.ReadFile(expandedPath)
-	if err != nil {
-		return nil, fmt.Errorf("error read file: %v", err)
+
+	if data.Deposits == nil {
+		data.Deposits = []models.Deposit{}
 	}
-	var depositsData models.DepositsData
-	if err := json.Unmarshal(file, &depositsData); err != nil {
-		return nil, fmt.Errorf("error parse JSON: %v", err)
-	}
-	return &depositsData, nil
+
+	return &data, nil
 }
 
 func SaveDeposit(data models.DepositsData, dataPath string) error {
 	expandedPath := ExpandPath(dataPath)
-	dir := filepath.Dir(expandedPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("error creating dir: %v", err)
-	}
-	file, err := json.MarshalIndent(data, "", " ")
-	if err != nil {
-		return fmt.Errorf("error serialize JSON: %v", err)
-	}
-	if err := os.WriteFile(expandedPath, file, 0644); err != nil {
-		return fmt.Errorf("error write file: %v", err)
+	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
+		return errors.NewStorageError("сохранение вкладов", err)
 	}
 	return nil
 }
@@ -46,14 +36,33 @@ func SaveDeposit(data models.DepositsData, dataPath string) error {
 func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return fmt.Errorf("error load deposits while create: %v", err)
+		return errors.WrapError(
+			errors.ErrStorage,
+			"ошибка загрузки вкладов при создании",
+			err,
+		)
 	}
+
 	now := time.Now()
 	deposit.CreatedAt = now
 	deposit.UpdatedAt = now
+
 	if deposit.ID == "" {
 		deposit.ID = generateDepositID(deposit.Name)
 	}
+
+	for _, existingDeposit := range data.Deposits {
+		if existingDeposit.Name == deposit.Name && existingDeposit.Bank == deposit.Bank {
+			return errors.NewValidationError(
+				"вклад с таким названием уже существует в этом банке",
+				map[string]interface{}{
+					"name": deposit.Name,
+					"bank": deposit.Bank,
+				},
+			)
+		}
+	}
+
 	data.Deposits = append(data.Deposits, *deposit)
 	return SaveDeposit(*data, dataPath)
 }
@@ -61,22 +70,51 @@ func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 func UpdateDepositAmount(depositID string, amount int, dataPath string) error {
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return fmt.Errorf("error loading deposits while update: %w", err)
+		return errors.WrapError(
+			errors.ErrStorage,
+			"ошибка загрузки вкладов при обновлении суммы",
+			err,
+		)
 	}
+
+	found := false
 	for i := range data.Deposits {
 		if data.Deposits[i].ID == depositID {
-			data.Deposits[i].Amount += amount
+			newAmount := data.Deposits[i].Amount + amount
+			if newAmount < 0 {
+				return errors.NewBusinessLogicError(
+					"недостаточно средств на вкладе",
+					map[string]interface{}{
+						"deposit_id":       depositID,
+						"current_amount":   data.Deposits[i].Amount,
+						"requested_change": amount,
+						"resulting_amount": newAmount,
+					},
+				)
+			}
+
+			data.Deposits[i].Amount = newAmount
 			data.Deposits[i].UpdatedAt = time.Now()
-			return SaveDeposit(*data, dataPath)
+			found = true
+			break
 		}
 	}
-	return fmt.Errorf("deposit with ID %s not found", depositID)
+
+	if !found {
+		return errors.NewNotFoundError("вклад", depositID)
+	}
+
+	return SaveDeposit(*data, dataPath)
 }
 
 func UpdateDeposit(updatedDeposit *models.Deposit, dataPath string) error {
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return fmt.Errorf("error loading deposits while update: %w", err)
+		return errors.WrapError(
+			errors.ErrStorage,
+			"ошибка загрузки вкладов при обновлении",
+			err,
+		)
 	}
 
 	found := false
@@ -92,7 +130,7 @@ func UpdateDeposit(updatedDeposit *models.Deposit, dataPath string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("deposit with ID %s not found", updatedDeposit.ID)
+		return errors.NewNotFoundError("вклад", updatedDeposit.ID)
 	}
 
 	return SaveDeposit(*data, dataPath)
@@ -101,7 +139,11 @@ func UpdateDeposit(updatedDeposit *models.Deposit, dataPath string) error {
 func GetDepositByID(depositID string, dataPath string) (*models.Deposit, error) {
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading deposits: %w", err)
+		return nil, errors.WrapError(
+			errors.ErrStorage,
+			"ошибка загрузки вкладов при поиске по ID",
+			err,
+		)
 	}
 
 	for _, deposit := range data.Deposits {
@@ -110,13 +152,17 @@ func GetDepositByID(depositID string, dataPath string) (*models.Deposit, error) 
 		}
 	}
 
-	return nil, fmt.Errorf("deposit with ID %s not found", depositID)
+	return nil, errors.NewNotFoundError("вклад", depositID)
 }
 
 func FindDepositByNameAndBank(name, bank string, dataPath string) (*models.Deposit, error) {
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading deposits: %w", err)
+		return nil, errors.WrapError(
+			errors.ErrStorage,
+			"ошибка загрузки вкладов при поиске по имени и банку",
+			err,
+		)
 	}
 
 	for i := range data.Deposits {

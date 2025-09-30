@@ -1,13 +1,14 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/joho/godotenv"
+
+	"github.com/sunriseex/payments-cli/pkg/errors"
 )
 
 type Config struct {
@@ -23,7 +24,7 @@ var AppConfig *Config
 func Init() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %v", err)
+		return errors.NewConfigurationError("не удалось получить домашнюю директорию", err)
 	}
 
 	envPaths := []string{
@@ -36,29 +37,28 @@ func Init() error {
 	var loaded bool
 	for _, envPath := range envPaths {
 		if err := godotenv.Load(envPath); err == nil {
-			fmt.Printf("✅ Loaded .env from: %s\n", envPath)
 			loaded = true
 			break
 		}
 	}
 
 	if !loaded {
-		fmt.Println("⚠️  No .env file found, using environment variables")
+
 	}
 
 	dataPath, err := expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json"))
 	if err != nil {
-		return fmt.Errorf("expand data path: %v", err)
+		return errors.NewConfigurationError("ошибка расширения пути DATA_PATH", err)
 	}
 
 	depositsDataPath, err := expandPath(getEnv("DEPOSITS_DATA_PATH", "~/.config/waybar/deposits.json"))
 	if err != nil {
-		return fmt.Errorf("expand deposits data path: %v", err)
+		return errors.NewConfigurationError("ошибка расширения пути DEPOSITS_DATA_PATH", err)
 	}
 
 	ledgerPath, err := expandPath(getEnv("LEDGER_PATH", "~/ObsidianVault/finances/transactions.ledger"))
 	if err != nil {
-		return fmt.Errorf("expand ledger path: %v", err)
+		return errors.NewConfigurationError("ошибка расширения пути LEDGER_PATH", err)
 	}
 
 	AppConfig = &Config{
@@ -74,13 +74,13 @@ func Init() error {
 
 func expandPath(path string) (string, error) {
 	if path == "" {
-		return "", fmt.Errorf("path cannot be empty")
+		return "", errors.NewConfigurationError("путь не может быть пустым", nil)
 	}
 
 	if strings.HasPrefix(path, "~/") || path == "~" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return "", fmt.Errorf("get home directory: %v", err)
+			return "", errors.NewConfigurationError("не удалось получить домашнюю директорию", err)
 		}
 
 		if path == "~" {

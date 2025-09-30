@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/sunriseex/payments-cli/internal/models"
+	"github.com/sunriseex/payments-cli/pkg/errors"
 	"github.com/sunriseex/payments-cli/pkg/security"
 )
 
@@ -22,7 +23,7 @@ func LoadPayments(dataPath string) (*models.PaymentData, error) {
 	var data models.PaymentData
 
 	if err := security.SafeReadJSON(expandedPath, &data); err != nil {
-		return nil, err
+		return nil, errors.NewStorageError("чтение файла платежей", err)
 	}
 
 	if data.Payments == nil {
@@ -34,5 +35,8 @@ func LoadPayments(dataPath string) (*models.PaymentData, error) {
 
 func SavePayments(data *models.PaymentData, dataPath string) error {
 	expandedPath := ExpandPath(dataPath)
-	return security.AtomicWriteJSON(data, expandedPath)
+	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
+		return errors.NewStorageError("сохранение платежей", err)
+	}
+	return nil
 }
