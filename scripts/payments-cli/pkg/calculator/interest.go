@@ -1,38 +1,96 @@
 package calculator
 
 import (
-	"math"
+	"math/big"
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/models"
 )
 
-func CalculateIncome(deposit models.Deposit, days int) float64 {
-	if deposit.Amount == 0 || days <= 0 {
-		return 0.0
+func CalculateIncome(deposit models.Deposit, days int) *big.Float {
+	if deposit.Amount <= 0 || days <= 0 {
+		return new(big.Float).SetInt64(0)
 	}
 
-	amount := float64(deposit.Amount) / 100.0
-	effectiveRate := getEffectiveRate(deposit)
+	amount := new(big.Float).SetInt64(int64(deposit.Amount))
+	amount.Quo(amount, big.NewFloat(100.0))
+
+	effectiveRate := getEffectiveRateBig(deposit)
 
 	if deposit.Bank == "Яндекс Банк" || deposit.Bank == "Yandex" {
-		dailyRate := effectiveRate / 360 / 100.0
-		return amount * (math.Pow(1+dailyRate, float64(days)) - 1)
+		return calculateDailyCapitalization(amount, effectiveRate, days, 360)
 	}
 
 	switch deposit.Capitalization {
 	case "daily":
-		dailyRate := effectiveRate / 365 / 100.0
-		return amount * (math.Pow(1+dailyRate, float64(days)) - 1)
+		return calculateDailyCapitalization(amount, effectiveRate, days, 365)
 	case "monthly":
-		months := float64(days) / 30.44
-		monthlyRate := effectiveRate / 12.0 / 100.0
-		return amount * (math.Pow(1+monthlyRate, months) - 1)
+		return calculateMonthlyCapitalization(amount, effectiveRate, days)
 	case "end":
-		return amount * effectiveRate / 100.0 * float64(days) / 365.0
+		return calculateEndTerm(amount, effectiveRate, days)
 	default:
-		return amount * effectiveRate / 100.0 * float64(days) / 365.0
+		return calculateEndTerm(amount, effectiveRate, days)
 	}
+}
+
+func calculateDailyCapitalization(amount, rate *big.Float, days int, daysInYear float64) *big.Float {
+	dailyRate := new(big.Float).Quo(rate, big.NewFloat(daysInYear*100))
+	one := big.NewFloat(1.0)
+
+	factor := new(big.Float).Add(one, dailyRate)
+	factor = pow(factor, days)
+
+	result := new(big.Float).Sub(factor, one)
+	result.Mul(result, amount)
+
+	return result
+}
+
+func calculateMonthlyCapitalization(amount, rate *big.Float, days int) *big.Float {
+	months := new(big.Float).Quo(big.NewFloat(float64(days)), big.NewFloat(30.44))
+	monthlyRate := new(big.Float).Quo(rate, big.NewFloat(1200))
+	one := big.NewFloat(1.0)
+
+	factor := new(big.Float).Add(one, monthlyRate)
+	factor = pow(factor, int(months.Mul(months, big.NewFloat(1.0)).Sign()))
+
+	result := new(big.Float).Sub(factor, one)
+	result.Mul(result, amount)
+
+	return result
+}
+
+func calculateEndTerm(amount, rate *big.Float, days int) *big.Float {
+	result := new(big.Float).Mul(amount, rate)
+	result.Quo(result, big.NewFloat(100.0))
+	result.Mul(result, big.NewFloat(float64(days)))
+	result.Quo(result, big.NewFloat(365.0))
+	return result
+}
+
+func pow(x *big.Float, n int) *big.Float {
+	if n == 0 {
+		return big.NewFloat(1.0)
+	}
+
+	result := new(big.Float).Copy(x)
+	for i := 1; i < n; i++ {
+		result.Mul(result, x)
+	}
+	return result
+}
+
+func getEffectiveRateBig(deposit models.Deposit) *big.Float {
+	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
+		return big.NewFloat(deposit.InterestRate)
+	}
+
+	active, _ := CheckPromoStatus(deposit)
+	if active {
+		return big.NewFloat(*deposit.PromoRate)
+	}
+
+	return big.NewFloat(deposit.InterestRate)
 }
 
 func CalculateMaturityDate(startDate string, termMonths int) (string, error) {
@@ -51,19 +109,6 @@ func CalculateTopUpEndDate(startDate string) string {
 	}
 	topUpEnd := date.AddDate(0, 0, 7)
 	return topUpEnd.Format("2006-01-02")
-}
-
-func getEffectiveRate(deposit models.Deposit) float64 {
-	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
-		return deposit.InterestRate
-	}
-
-	active, _ := CheckPromoStatus(deposit)
-	if active {
-		return *deposit.PromoRate
-	}
-
-	return deposit.InterestRate
 }
 
 func CheckPromoStatus(deposit models.Deposit) (bool, int) {
@@ -113,24 +158,24 @@ func CanBeProlonged(deposit models.Deposit) bool {
 	return daysUntilEnd <= 7
 }
 
-func CalculateTotalTermIncome(deposit models.Deposit) float64 {
+func CalculateTotalTermIncome(deposit models.Deposit) *big.Float {
 	if deposit.Type != "term" || deposit.StartDate == "" || deposit.EndDate == "" {
-		return 0.0
+		return big.NewFloat(0.0)
 	}
 
 	start, err := time.Parse("2006-01-02", deposit.StartDate)
 	if err != nil {
-		return 0.0
+		return big.NewFloat(0.0)
 	}
 
 	end, err := time.Parse("2006-01-02", deposit.EndDate)
 	if err != nil {
-		return 0.0
+		return big.NewFloat(0.0)
 	}
 
 	totalDays := int(end.Sub(start).Hours() / 24)
 	if totalDays <= 0 {
-		return 0.0
+		return big.NewFloat(0.0)
 	}
 
 	return CalculateIncome(deposit, totalDays)
