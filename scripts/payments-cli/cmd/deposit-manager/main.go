@@ -7,9 +7,7 @@ import (
 
 	"github.com/sunriseex/payments-cli/internal/commands"
 	"github.com/sunriseex/payments-cli/internal/config"
-	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/internal/notifications"
-	"github.com/sunriseex/payments-cli/internal/storage"
 )
 
 func main() {
@@ -79,24 +77,10 @@ func main() {
 		if err := commands.DepositUpdate(os.Args[2]); err != nil {
 			log.Fatal(err)
 		}
-	case "interest":
-		if len(os.Args) < 5 {
-			log.Fatal("Использование: deposit-manager interest <deposit_id> <amount> <description>")
-		}
-		amount, err := parseAmount(os.Args[3])
-		if err != nil {
-			log.Fatalf("Неверная сумма: %v", err)
-		}
-		description := os.Args[4]
-		tempDeposit := models.Deposit{
-			ID:   os.Args[2],
-			Name: "Вклад",
-		}
-		if err := storage.RecordDepositToLedger(tempDeposit, "interest", amount, description, config.AppConfig.LedgerPath); err != nil {
+	case "accrue-interest":
+		if err := commands.DepositAccrueInterest(); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("✅ Начисление процентов записано в ledger\n")
-
 	case "help", "-h", "--help":
 		showHelp()
 	default:
@@ -123,10 +107,11 @@ func parseDays(daysStr string) (int, error) {
 }
 
 func handleDepositCreate(args []string) error {
-	var name, bank, depositType string
+	var name, bank, depositType, promoEndDate string
 	var amount int
 	var rate float64
 	var termMonths int
+	var promoRate *float64
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -172,10 +157,20 @@ func handleDepositCreate(args []string) error {
 				termMonths = term
 				i++
 			}
+		case "--promo-rate":
+			if i+1 < len(args) {
+				pr, err := parseRate(args[i+1])
+				if err != nil {
+					return err
+				}
+				promoRate = &pr
+				i++
+			}
 		case "--promo-end":
-			i++
-		case "--capitalization":
-			i++
+			if i+1 < len(args) {
+				promoEndDate = args[i+1]
+				i++
+			}
 		}
 	}
 
@@ -199,7 +194,11 @@ func handleDepositCreate(args []string) error {
 		return fmt.Errorf("для срочного вклада необходимо указать срок в месяцах (--term)")
 	}
 
-	return commands.DepositCreate(name, bank, depositType, amount, rate, termMonths)
+	if promoRate != nil && promoEndDate == "" {
+		return fmt.Errorf("при указании промо-ставки необходимо указать дату окончания (--promo-end)")
+	}
+
+	return commands.DepositCreate(name, bank, depositType, amount, rate, termMonths, promoRate, promoEndDate)
 }
 
 func parseRate(rateStr string) (float64, error) {
@@ -219,11 +218,12 @@ func parseTerm(termStr string) (int, error) {
 }
 
 func showCreateUsage() {
-	fmt.Println("Использование: deposit-manager create --name <name> --bank <bank> --type <savings|term> --amount <amount> --rate <interest_rate> [--term <months>]")
+	fmt.Println("Использование: deposit-manager create --name <name> --bank <bank> --type <savings|term> --amount <amount> --rate <interest_rate> [--term <months>] [--promo-rate <rate> --promo-end <date>]")
 	fmt.Println()
 	fmt.Println("Примеры:")
 	fmt.Println("  deposit-manager create --name \"Яндекс Сейв\" --bank \"Яндекс Банк\" --type savings --amount 50000 --rate 17.0")
 	fmt.Println("  deposit-manager create --name \"Яндекс Срочный\" --bank \"Яндекс Банк\" --type term --amount 100000 --rate 17.0 --term 3")
+	fmt.Println("  deposit-manager create --name \"Яндекс Промо\" --bank \"Яндекс Банк\" --type savings --amount 50000 --rate 12.0 --promo-rate 17.0 --promo-end 2024-12-31")
 }
 
 func showHelp() {
@@ -237,24 +237,11 @@ func showHelp() {
   deposit-manager calculate <id> <days> - Рассчитать доход по вкладу
   deposit-manager create            - Создать новый вклад
   deposit-manager update <id>       - Обновить даты вклада (пролонгация)
-  deposit-manager interest <id> <amount> <desc> - Записать начисление процентов
+  deposit-manager accrue-interest   - Автоматическое начисление процентов
   deposit-manager help              - Показать эту справку
 
 Примеры:
-  # Создание вкладов
   deposit-manager create --name "Яндекс Сейв" --bank "Яндекс Банк" --type savings --amount 50000 --rate 17.0
   deposit-manager create --name "Яндекс Срочный" --bank "Яндекс Банк" --type term --amount 100000 --rate 17.0 --term 3
-
-  # Работа с вкладами
-  deposit-manager list
-  deposit-manager topup yandex-save-1 15000
-  deposit-manager calculate yandex-save-1 30
-  deposit-manager notifications
-  deposit-manager update yandex-term-1
-
-Конфигурация:
-  Файл данных вкладов: ~/.config/finance/deposits.json
-  Файл ledger: ~/ObsidianVault/finances/transactions.ledger
-  Поддерживаемые банки: ЯндексБанк
-  Типы вкладов: savings (бессрочный), term (срочный)`)
+  deposit-manager accrue-interest`)
 }

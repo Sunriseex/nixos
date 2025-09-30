@@ -8,6 +8,7 @@ type Deposit struct {
 	Bank           string    `json:"bank"`
 	Type           string    `json:"type"`
 	Amount         int       `json:"amount"`
+	InitialAmount  int       `json:"initial_amount"`
 	InterestRate   float64   `json:"interest_rate"`
 	PromoRate      *float64  `json:"promo_rate,omitempty"`
 	PromoEndDate   string    `json:"promo_end_date,omitempty"`

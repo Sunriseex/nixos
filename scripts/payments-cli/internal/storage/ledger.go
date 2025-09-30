@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,17 +21,17 @@ func RecordPaymentToLedger(payment models.Payment, ledgerPath string) error {
 		return err
 	}
 	defer file.Close()
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().Format("2006/01/02")
 	amount := fmt.Sprintf("₽%.2f", float64(payment.Amount)/100.0)
-	expenseAccount := "Expenses:Subcriptions"
+	expenseAccount := "e:Subcriptions"
 	if payment.Category != "" {
-		expenseAccount = "Expenses:" + payment.Category
+		expenseAccount = "e:" + payment.Category
 	}
 	paymentAccount := payment.LedgerAccount
 	if paymentAccount == "" {
-		paymentAccount = "Liabilities:YandexPay"
+		paymentAccount = "l:YandexPay"
 	}
-	entry := fmt.Sprintf("%s %s\n %-40s %s\n %s\n\n",
+	entry := fmt.Sprintf("%s %s\n  %s %s\n  %s\n\n",
 		today, payment.Name, expenseAccount, amount, paymentAccount,
 	)
 	_, err = file.WriteString(entry)
@@ -52,42 +51,56 @@ func RecordDepositToLedger(deposit models.Deposit, operationType string, amount 
 	}
 	defer file.Close()
 
-	today := time.Now().Format("2006-01-02")
+	today := time.Now().Format("2006/01/02")
 	amountRubles := fmt.Sprintf("₽%.2f", float64(amount)/100.0)
 
 	var creditAccount, debitAccount string
+	bankShort := formatBankNameForLedger(deposit.Bank)
 
 	switch operationType {
 	case "create":
-		creditAccount = "Assets:Current"
-		debitAccount = fmt.Sprintf("Assets:Deposits:%s", formatAccountName(deposit.Name))
-		description = fmt.Sprintf("Открытие вклада: %s", deposit.Name)
-	case "topup":
-		creditAccount = "Assets:Current"
-		debitAccount = fmt.Sprintf("Assets:Deposits:%s", formatAccountName(deposit.Name))
+		creditAccount = fmt.Sprintf("b:%s", bankShort)
+		debitAccount = fmt.Sprintf("b:%s:Savings", bankShort)
 		if description == "" {
-			description = fmt.Sprintf("Пополнение вклада: %s", deposit.Name)
+			description = fmt.Sprintf("Открытие вклада %s", deposit.Name)
+		}
+	case "topup":
+		creditAccount = fmt.Sprintf("b:%s", bankShort)
+		debitAccount = fmt.Sprintf("b:%s:Savings", bankShort)
+		if description == "" {
+			description = fmt.Sprintf("Пополнение вклада %s", deposit.Name)
 		}
 	case "interest":
-		creditAccount = fmt.Sprintf("Income:Interest:%s", formatAccountName(deposit.Bank))
-		debitAccount = fmt.Sprintf("Assets:Deposits:%s", formatAccountName(deposit.Name))
-		description = fmt.Sprintf("Начисление процентов по вкладу: %s", deposit.Name)
+		creditAccount = "i:Interest:Bank"
+		debitAccount = fmt.Sprintf("b:%s:Savings", bankShort)
+		if description == "" {
+			description = "Выплата процентов"
+		}
 	default:
 		return fmt.Errorf("unknown deposit operation type: %s", operationType)
 	}
 
-	entry := fmt.Sprintf("%s %s\n %-40s %s\n %-40s %s\n\n",
+	entry := fmt.Sprintf("%s %s\n  %s %s\n  %s\n\n",
 		today, description,
 		debitAccount, amountRubles,
-		creditAccount, "-"+amountRubles,
+		creditAccount,
 	)
 
 	_, err = file.WriteString(entry)
 	return err
 }
 
-func formatAccountName(name string) string {
-	reg, _ := regexp.Compile("[^a-zA-Z0-9а-яА-Я]+")
-	safeName := reg.ReplaceAllString(name, "_")
-	return strings.Trim(safeName, "_")
+func formatBankNameForLedger(bank string) string {
+	switch bank {
+	case "Яндекс Банк", "Yandex":
+		return "Yandex"
+	case "Альфа Банк", "Alfa":
+		return "AlfaBank"
+	case "Тинькофф", "Tinkoff":
+		return "Tbank"
+	default:
+		safeName := strings.ReplaceAll(bank, " ", "")
+		safeName = strings.ReplaceAll(safeName, "-", "")
+		return safeName
+	}
 }

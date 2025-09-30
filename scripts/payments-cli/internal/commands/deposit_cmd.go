@@ -14,17 +14,24 @@ import (
 	"github.com/sunriseex/payments-cli/pkg/utils"
 )
 
-func DepositCreate(name, bank, depositType string, amount int, interestRate float64, termMonths int) error {
+func DepositCreate(name, bank, depositType string, amount int, interestRate float64, termMonths int, promoRate *float64, promoEndDate string) error {
 	deposit := &models.Deposit{
-		Name:           name,
-		Bank:           bank,
-		Type:           depositType,
-		Amount:         amount,
-		InterestRate:   interestRate,
-		PromoRate:      nil,
-		StartDate:      time.Now().Format("2006-01-02"),
-		Capitalization: "daily",
-		AutoRenewal:    true,
+		Name:          name,
+		Bank:          bank,
+		Type:          depositType,
+		Amount:        amount,
+		InitialAmount: amount,
+		InterestRate:  interestRate,
+		PromoRate:     promoRate,
+		PromoEndDate:  promoEndDate,
+		StartDate:     time.Now().Format("2006-01-02"),
+		AutoRenewal:   true,
+	}
+
+	if bank == "Яндекс Банк" || bank == "Yandex" {
+		deposit.Capitalization = "daily"
+	} else {
+		deposit.Capitalization = "daily"
 	}
 
 	if depositType == "term" {
@@ -37,15 +44,14 @@ func DepositCreate(name, bank, depositType string, amount int, interestRate floa
 		deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(deposit.StartDate)
 	}
 
-	if err := validateDeposit(deposit); err != nil {
-		return fmt.Errorf("deposit validation failed: %v", err)
-	}
-
 	if err := storage.CreateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
 		return fmt.Errorf("error creating deposit: %v", err)
 	}
 
 	fmt.Printf("✅ Вклад '%s' успешно создан\n", name)
+	if promoRate != nil {
+		fmt.Printf("   Промо-ставка: %.2f%% (до %s)\n", *promoRate, promoEndDate)
+	}
 	return nil
 }
 
@@ -61,7 +67,6 @@ func DepositList() error {
 	fmt.Println("💼 АКТИВНЫЕ ВКЛАДЫ:")
 	fmt.Println("===================")
 	totalAmount := 0
-	totalEarned := 0.0
 
 	for i, deposit := range data.Deposits {
 		amountRubles := float64(deposit.Amount) / 100.0
@@ -69,31 +74,16 @@ func DepositList() error {
 
 		fmt.Printf("%d. %s (%s)\n", i+1, deposit.Name, deposit.Bank)
 		fmt.Printf("   Сумма: %.2f руб.\n", amountRubles)
-		fmt.Printf("   Ставка: %.2f%%\n", deposit.InterestRate)
-		fmt.Printf("   Тип: %s\n", deposit.Type)
 
-		if deposit.Type == "term" && deposit.EndDate != "" {
-			daysLeft := utils.DaysUntil(deposit.EndDate)
-			fmt.Printf("   До окончания: %d дней\n", daysLeft)
-
-			if deposit.StartDate != "" {
-				daysPassed := daysSince(deposit.StartDate)
-				if daysPassed > 0 {
-					earned := calculator.CalculateIncome(deposit, daysPassed)
-					fmt.Printf("   Заработано на текущий момент: ~%.2f руб.\n", earned)
-					totalEarned += earned
-				}
-			}
+		active, daysLeft := calculator.CheckPromoStatus(deposit)
+		if active {
+			fmt.Printf("   Промо-ставка: %.2f%% (до %s, осталось %d дн.)\n",
+				*deposit.PromoRate, deposit.PromoEndDate, daysLeft)
 		} else {
-			if deposit.StartDate != "" {
-				daysPassed := daysSince(deposit.StartDate)
-				if daysPassed > 0 {
-					earned := calculator.CalculateIncome(deposit, daysPassed)
-					fmt.Printf("   Заработано на текущий момент: ~%.2f руб.\n", earned)
-					totalEarned += earned
-				}
-			}
+			fmt.Printf("   Ставка: %.2f%%\n", deposit.InterestRate)
 		}
+
+		fmt.Printf("   Тип: %s\n", deposit.Type)
 
 		monthlyIncome := calculator.CalculateIncome(deposit, 30)
 		fmt.Printf("   Доход в месяц: ~%.2f руб.\n", monthlyIncome)
@@ -102,13 +92,10 @@ func DepositList() error {
 
 	totalRubles := float64(totalAmount) / 100.0
 	fmt.Printf("📊 ИТОГО: %d вкладов на сумму %.2f руб.\n", len(data.Deposits), totalRubles)
-	fmt.Printf("💵 Всего заработано: ~%.2f руб.\n", totalEarned)
-
 	return nil
 }
 
 func DepositTopUp(depositID string, amount int) error {
-
 	if err := storage.UpdateDepositAmount(depositID, amount, config.AppConfig.DepositsDataPath); err != nil {
 		return fmt.Errorf("error topup deposit: %v", err)
 	}
@@ -117,30 +104,11 @@ func DepositTopUp(depositID string, amount int) error {
 	return nil
 }
 
-func DepositCheckNotifications() error {
-	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
-	if err != nil {
-		return fmt.Errorf("error load deposits for check notification: %v", err)
-	}
-	notifications := notifications.CheckDepositNotifications(data.Deposits)
-	if len(notifications) == 0 {
-		fmt.Println("✅ Нет активных уведомлений по вкладам")
-		return nil
-	}
-	fmt.Println("🔔 УВЕДОМЛЕНИЯ ПО ВКЛАДАМ:")
-	fmt.Println("=========================")
-	for _, notification := range notifications {
-		fmt.Printf("• %s\n", notification)
-	}
-	return nil
-}
-
 func DepositCalculateIncome(depositID string, days int) error {
 	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
 	if err != nil {
 		return fmt.Errorf("error load deposits for calculate income: %v", err)
 	}
-
 	for _, deposit := range data.Deposits {
 		if deposit.ID == depositID {
 			income := calculator.CalculateIncome(deposit, days)
@@ -154,21 +122,102 @@ func DepositCalculateIncome(depositID string, days int) error {
 			fmt.Printf("   Ожидаемый доход: %.2f руб.\n", income)
 			fmt.Printf("   Общая сумма: %.2f руб.\n", amountRubles+income)
 
-			fmt.Printf("\n💾 Записать начисление процентов в ledger? [y/N]: ")
-			var response string
-			fmt.Scanln(&response)
+			return nil
+		}
 
-			if strings.ToLower(response) == "y" {
-				if err := DepositRecordInterest(depositID, income, days); err != nil {
-					fmt.Printf("❌ Ошибка записи в ledger: %v\n", err)
+	}
+	return fmt.Errorf("deposit with ID %s not found", depositID)
+}
+
+func DepositUpdate(depositID string) error {
+	deposit, err := storage.GetDepositByID(depositID, config.AppConfig.DepositsDataPath)
+	if err != nil {
+		return fmt.Errorf("error getting deposit: %v", err)
+	}
+
+	if deposit.Type != "term" {
+		return fmt.Errorf("only term deposits can be updated (prolonged)")
+	}
+
+	today := time.Now().Format("2006-01-02")
+
+	deposit.StartDate = today
+
+	endDate, err := calculator.CalculateMaturityDate(today, deposit.TermMonths)
+	if err != nil {
+		return fmt.Errorf("error calculating maturity date: %v", err)
+	}
+	deposit.EndDate = endDate
+
+	deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(today)
+
+	if err := storage.UpdateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
+		return fmt.Errorf("error updating deposit: %v", err)
+	}
+
+	fmt.Printf("✅ Вклад '%s' успешно обновлен\n", deposit.Name)
+	fmt.Printf("   Новая дата начала: %s\n", deposit.StartDate)
+	fmt.Printf("   Новая дата окончания: %s\n", deposit.EndDate)
+	fmt.Printf("   Дата окончания пополнения: %s\n", deposit.TopUpEndDate)
+
+	return nil
+}
+
+func DepositAccrueInterest() error {
+	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+	if err != nil {
+		return fmt.Errorf("error loading deposits for interest accrual: %v", err)
+	}
+
+	totalAccrued := 0.0
+	accruals := 0
+
+	for _, deposit := range data.Deposits {
+		var income float64
+		var description string
+
+		if deposit.Type == "savings" {
+			income = calculator.CalculateIncome(deposit, 1)
+			description = "Выплата процентов"
+		} else if deposit.Type == "term" {
+			if calculator.IsDepositExpired(deposit) {
+				daysPassed := daysSince(deposit.StartDate)
+				if daysPassed > 0 {
+					income = calculator.CalculateIncome(deposit, daysPassed)
+					description = "Выплата процентов по окончании срока"
 				}
+			} else {
+				continue
+			}
+		}
+
+		if income > 0 {
+			amountKopecks := int(income * 100)
+
+			if err := storage.RecordDepositToLedger(deposit, "interest", amountKopecks, description, config.AppConfig.LedgerPath); err != nil {
+				fmt.Printf("⚠️  Ошибка записи в ledger для вклада %s: %v\n", deposit.Name, err)
+				continue
 			}
 
-			return nil
+			if err := storage.UpdateDepositAmount(deposit.ID, amountKopecks, config.AppConfig.DepositsDataPath); err != nil {
+				fmt.Printf("⚠️  Ошибка обновления суммы вклада %s: %v\n", deposit.Name, err)
+				continue
+			}
+
+			totalAccrued += income
+			accruals++
+
+			fmt.Printf("✅ Начислены проценты по вкладу '%s': %.2f руб.\n", deposit.Name, income)
 		}
 	}
 
-	return fmt.Errorf("deposit with ID %s not found", depositID)
+	if accruals > 0 {
+		fmt.Printf("\n📊 Всего начислено: %.2f руб. по %d вкладам\n", totalAccrued, accruals)
+	} else {
+		fmt.Println("ℹ️  Не найдено вкладов для начисления процентов")
+	}
+
+	return nil
 }
 
 func ParseRubles(amountStr string) (int, error) {
@@ -212,46 +261,15 @@ func ParseTerm(termStr string) (int, error) {
 	return term, nil
 }
 
-func DepositUpdate(depositID string) error {
-	deposit, err := storage.GetDepositByID(depositID, config.AppConfig.DepositsDataPath)
-	if err != nil {
-		return fmt.Errorf("error getting deposit: %v", err)
-	}
-
-	if deposit.Type != "term" {
-		return fmt.Errorf("only term deposits can be updated (prolonged)")
-	}
-
-	today := time.Now().Format("2006-01-02")
-
-	deposit.StartDate = today
-
-	endDate, err := calculator.CalculateMaturityDate(today, deposit.TermMonths)
-	if err != nil {
-		return fmt.Errorf("error calculating maturity date: %v", err)
-	}
-	deposit.EndDate = endDate
-
-	deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(today)
-
-	if err := storage.UpdateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
-		return fmt.Errorf("error updating deposit: %v", err)
-	}
-
-	fmt.Printf("✅ Вклад '%s' успешно обновлен\n", deposit.Name)
-	fmt.Printf("   Новая дата начала: %s\n", deposit.StartDate)
-	fmt.Printf("   Новая дата окончания: %s\n", deposit.EndDate)
-	fmt.Printf("   Дата окончания пополнения: %s\n", deposit.TopUpEndDate)
-
-	return nil
-}
-
 func validateDeposit(deposit *models.Deposit) error {
 	if deposit.Amount <= 0 {
 		return fmt.Errorf("deposit amount must be positive")
 	}
 	if deposit.InterestRate <= 0 {
 		return fmt.Errorf("interest rate must be positive")
+	}
+	if deposit.PromoRate != nil && *deposit.PromoRate <= 0 {
+		return fmt.Errorf("promo rate must be positive if set")
 	}
 	if deposit.Type == "term" && deposit.TermMonths <= 0 {
 		return fmt.Errorf("term deposits must have positive term")
@@ -267,6 +285,12 @@ func validateDeposit(deposit *models.Deposit) error {
 		return fmt.Errorf("invalid start date format: %v", err)
 	}
 
+	if deposit.PromoEndDate != "" {
+		if _, err := time.Parse("2006-01-02", deposit.PromoEndDate); err != nil {
+			return fmt.Errorf("invalid promo end date format: %v", err)
+		}
+	}
+
 	if deposit.Type == "term" && deposit.EndDate != "" {
 		if _, err := time.Parse("2006-01-02", deposit.EndDate); err != nil {
 			return fmt.Errorf("invalid end date format: %v", err)
@@ -276,34 +300,34 @@ func validateDeposit(deposit *models.Deposit) error {
 	return nil
 }
 
-func DepositRecordInterest(depositID string, income float64, days int) error {
-	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+func DepositFind(name, bank string) error {
+	deposit, err := storage.FindDepositByNameAndBank(name, bank, config.AppConfig.DepositsDataPath)
 	if err != nil {
-		return fmt.Errorf("error loading deposits: %v", err)
+		return fmt.Errorf("error searching deposit: %v", err)
 	}
 
-	var deposit models.Deposit
-	found := false
-	for _, d := range data.Deposits {
-		if d.ID == depositID {
-			deposit = d
-			found = true
-			break
+	if deposit == nil {
+		fmt.Printf("Вклад '%s' в банке '%s' не найден\n", name, bank)
+		return nil
+	}
+
+	amountRubles := float64(deposit.Amount) / 100.0
+	fmt.Printf("Найден вклад:\n")
+	fmt.Printf("  ID: %s\n", deposit.ID)
+	fmt.Printf("  Название: %s\n", deposit.Name)
+	fmt.Printf("  Банк: %s\n", deposit.Bank)
+	fmt.Printf("  Тип: %s\n", deposit.Type)
+	fmt.Printf("  Сумма: %.2f руб.\n", amountRubles)
+	fmt.Printf("  Ставка: %.2f%%\n", deposit.InterestRate)
+
+	if deposit.Type == "term" {
+		fmt.Printf("  Срок: %d месяцев\n", deposit.TermMonths)
+		if deposit.EndDate != "" {
+			daysLeft := utils.DaysUntil(deposit.EndDate)
+			fmt.Printf("  До окончания: %d дней\n", daysLeft)
 		}
 	}
 
-	if !found {
-		return fmt.Errorf("deposit with ID %s not found", depositID)
-	}
-
-	incomeKopecks := int(income * 100)
-
-	description := fmt.Sprintf("Начисление процентов за %d дней", days)
-	if err := storage.RecordDepositToLedger(deposit, "interest", incomeKopecks, description, config.AppConfig.LedgerPath); err != nil {
-		return fmt.Errorf("error recording interest to ledger: %v", err)
-	}
-
-	fmt.Printf("✅ Начисление процентов записано в ledger: %.2f руб.\n", income)
 	return nil
 }
 
@@ -317,4 +341,39 @@ func daysSince(startDate string) int {
 		return 0
 	}
 	return days
+}
+
+func formatBankName(bank string) string {
+	switch bank {
+	case "Яндекс Банк", "Yandex":
+		return "Yandex"
+	case "Альфа Банк", "Alfa":
+		return "AlfaBank"
+	case "Тинькофф", "Tinkoff":
+		return "Tbank"
+	default:
+		return strings.ReplaceAll(bank, " ", "")
+	}
+}
+
+func DepositCheckNotifications() error {
+	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+	if err != nil {
+		return fmt.Errorf("error loading deposits for notifications: %v", err)
+	}
+
+	notificationsList := notifications.CheckDepositNotifications(data.Deposits)
+
+	if len(notificationsList) == 0 {
+		fmt.Println("ℹ️  Нет уведомлений по вкладам")
+		return nil
+	}
+
+	fmt.Println("Уведомления по вкладам:")
+	fmt.Println("======================")
+	for _, notification := range notificationsList {
+		fmt.Println("•", notification)
+	}
+
+	return nil
 }

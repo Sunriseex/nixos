@@ -8,12 +8,17 @@ import (
 )
 
 func CalculateIncome(deposit models.Deposit, days int) float64 {
-
 	if deposit.Amount == 0 || days <= 0 {
 		return 0.0
 	}
-	effectiveRate := getEffectiveRate(deposit)
+
 	amount := float64(deposit.Amount) / 100.0
+	effectiveRate := getEffectiveRate(deposit)
+
+	if deposit.Bank == "Яндекс Банк" || deposit.Bank == "Yandex" {
+		dailyRate := effectiveRate / 360 / 100.0
+		return amount * (math.Pow(1+dailyRate, float64(days)) - 1)
+	}
 
 	switch deposit.Capitalization {
 	case "daily":
@@ -28,7 +33,6 @@ func CalculateIncome(deposit models.Deposit, days int) float64 {
 	default:
 		return amount * effectiveRate / 100.0 * float64(days) / 365.0
 	}
-
 }
 
 func CalculateMaturityDate(startDate string, termMonths int) (string, error) {
@@ -50,28 +54,31 @@ func CalculateTopUpEndDate(startDate string) string {
 }
 
 func getEffectiveRate(deposit models.Deposit) float64 {
-	if deposit.PromoEndDate == "" || deposit.PromoRate == nil {
+	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
 		return deposit.InterestRate
 	}
-	promoEnd, err := time.Parse("2006-01-02", deposit.PromoEndDate)
-	if err != nil {
-		return deposit.InterestRate
-	}
-	if time.Now().Before(promoEnd) {
+
+	active, _ := CheckPromoStatus(deposit)
+	if active {
 		return *deposit.PromoRate
 	}
+
 	return deposit.InterestRate
 }
 
 func CheckPromoStatus(deposit models.Deposit) (bool, int) {
-	if deposit.PromoEndDate == "" {
+	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
 		return false, 0
 	}
+
 	promoEnd, err := time.Parse("2006-01-02", deposit.PromoEndDate)
 	if err != nil {
 		return false, 0
 	}
+
+	promoEnd = promoEnd.AddDate(0, 0, 1)
 	daysUntilEnd := int(promoEnd.Sub(time.Now()).Hours() / 24)
+
 	return daysUntilEnd > 0, daysUntilEnd
 }
 

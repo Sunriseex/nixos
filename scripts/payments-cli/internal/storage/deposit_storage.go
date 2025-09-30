@@ -72,10 +72,6 @@ func UpdateDepositAmount(depositID string, amount int, dataPath string) error {
 	}
 	return fmt.Errorf("deposit with ID %s not found", depositID)
 }
-func generateDepositID(name string) string {
-	base := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	return fmt.Sprintf("%s-%d", base, time.Now().Unix())
-}
 
 func UpdateDeposit(updatedDeposit *models.Deposit, dataPath string) error {
 	data, err := LoadDeposits(dataPath)
@@ -115,4 +111,24 @@ func GetDepositByID(depositID string, dataPath string) (*models.Deposit, error) 
 	}
 
 	return nil, fmt.Errorf("deposit with ID %s not found", depositID)
+}
+
+func FindDepositByNameAndBank(name, bank string, dataPath string) (*models.Deposit, error) {
+	data, err := LoadDeposits(dataPath)
+	if err != nil {
+		return nil, fmt.Errorf("error loading deposits: %w", err)
+	}
+
+	for i := range data.Deposits {
+		if data.Deposits[i].Name == name && data.Deposits[i].Bank == bank {
+			return &data.Deposits[i], nil
+		}
+	}
+
+	return nil, nil
+}
+
+func generateDepositID(name string) string {
+	base := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	return fmt.Sprintf("%s-%d", base, time.Now().Unix())
 }

@@ -220,6 +220,8 @@ create_new_deposit() {
     local amount="$4"
     local rate="$5"
     local term="$6"
+    local promo_rate_value="$7"
+    local promo_end_date="$8"
 
     log "Создание нового вклада: $name"
 
@@ -231,6 +233,16 @@ create_new_deposit() {
         command="$command --term \"$term\""
     fi
 
+    # Добавляем параметры промо-ставки если они указаны
+    if [[ -n "$promo_rate_value" ]]; then
+        command="$command --promo-rate \"$promo_rate_value\""
+    fi
+
+    if [[ -n "$promo_end_date" ]]; then
+        command="$command --promo-end \"$promo_end_date\""
+    fi
+
+    echo "Выполняется команда: $command"
     eval "$command"
 
     local result=$?
@@ -281,6 +293,12 @@ add_or_update_deposit() {
     echo "=========================================="
     echo "Добавление/обновление вклада"
     echo "=========================================="
+
+    # Инициализируем переменные для дополнительных параметров
+    local promo_rate_value=""
+    local promo_end_date=""
+    local capitalization=""
+    local auto_renewal_flag=""
 
     show_existing_deposits
     echo ""
@@ -424,10 +442,25 @@ add_or_update_deposit() {
                 auto_renewal_flag=""
             fi
 
-            read -p "Есть ли промо-ставка? [y/N]: " promo_rate
-            if [[ $promo_rate =~ ^[Yy]$ ]]; then
-                read -p "Введите промо-ставку: " promo_rate_value
-                read -p "Введите дату окончания промо-ставки (ГГГГ-ММ-ДД): " promo_end_date
+            read -p "Есть ли промо-ставка? [y/N]: " has_promo_rate
+            if [[ $has_promo_rate =~ ^[Yy]$ ]]; then
+                while true; do
+                    read -p "Введите промо-ставку: " promo_rate_value
+                    if [[ $promo_rate_value =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && [[ $(echo "$promo_rate_value > 0" | bc -l) -eq 1 ]]; then
+                        break
+                    else
+                        error "Некорректная промо-ставка. Пример: 17.5 или 8.25"
+                    fi
+                done
+
+                while true; do
+                    read -p "Введите дату окончания промо-ставки (ГГГГ-ММ-ДД): " promo_end_date
+                    if date -d "$promo_end_date" >/dev/null 2>&1; then
+                        break
+                    else
+                        error "Некорректная дата. Используйте формат ГГГГ-ММ-ДД"
+                    fi
+                done
             fi
         fi
 
@@ -443,8 +476,14 @@ add_or_update_deposit() {
         if [[ "$deposit_type" == "term" ]]; then
             echo "Срок: $term месяцев"
         fi
+        if [[ -n "$promo_rate_value" ]]; then
+            echo "Промо-ставка: $promo_rate_value% (до $promo_end_date)"
+        fi
         if [[ -n "$capitalization" ]]; then
             echo "Капитализация: $capitalization"
+        fi
+        if [[ -n "$auto_renewal_flag" ]]; then
+            echo "Автопролонгация: включена"
         fi
         echo "=========================================="
 
@@ -452,7 +491,7 @@ add_or_update_deposit() {
             read -p "Создать вклад? [y/N]: " confirm
             case $confirm in
             [Yy]*)
-                create_new_deposit "$name" "$bank" "$deposit_type" "$amount" "$rate" "$term"
+                create_new_deposit "$name" "$bank" "$deposit_type" "$amount" "$rate" "$term" "$promo_rate_value" "$promo_end_date"
                 break
                 ;;
             [Nn]*)
@@ -489,6 +528,26 @@ bulk_topup() {
     info "Затем используйте 'deposit-manager topup <id> <amount>' для каждого вклада"
 }
 
+accrue_interest_auto() {
+    echo "=========================================="
+    echo "Автоматическое начисление процентов"
+    echo "=========================================="
+
+    log "Запуск автоматического начисления процентов..."
+
+    deposit-manager accrue-interest
+
+    local result=$?
+
+    if [[ $result -eq 0 ]]; then
+        log "Автоматическое начисление процентов завершено"
+    else
+        error "Ошибка при автоматическом начислении процентов"
+    fi
+
+    return $result
+}
+
 main_menu() {
     echo "=========================================="
     echo "Управление вкладами - deposit-manager"
@@ -501,8 +560,9 @@ main_menu() {
     echo "4) Массовое пополнение"
     echo "5) Рассчитать доход"
     echo "6) Записать начисление процентов в ledger"
-    echo "7) Показать заработанные проценты"
-    echo "8) Выход"
+    echo "7) Автоматическое начисление процентов"
+    echo "8) Показать заработанные проценты"
+    echo "9) Выход"
     echo ""
 }
 
@@ -547,7 +607,7 @@ main() {
 
     while true; do
         main_menu
-        read -p "Ваш выбор [1-8]: " choice
+        read -p "Ваш выбор [1-9]: " choice
 
         case $choice in
         1)
@@ -574,9 +634,12 @@ main() {
             record_interest_interactive
             ;;
         7)
-            show_earned_interest
+            accrue_interest_auto
             ;;
         8)
+            show_earned_interest
+            ;;
+        9)
             echo "Выход..."
             exit 0
             ;;
@@ -634,6 +697,9 @@ case "${1:-}" in
         error "Использование: $0 interest <deposit_name> <amount> <days>"
         exit 1
     fi
+    ;;
+"accrue-interest")
+    accrue_interest_auto
     ;;
 "earned")
     show_earned_interest
