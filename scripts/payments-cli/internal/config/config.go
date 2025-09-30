@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -21,32 +23,73 @@ var AppConfig *Config
 func Init() error {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get home directory: %v", err)
 	}
 
-	envPath := filepath.Join(home, "nixos/scripts/payments-cli/configs/.env")
+	envPaths := []string{
+		filepath.Join(home, "nixos/scripts/payments-cli/configs/.env"),
+		filepath.Join(home, "nixos/scripts/payment-cli/configs/.env"),
+		"./configs/.env",
+		".env",
+	}
 
-	if err := godotenv.Load(envPath); err != nil {
-		return err
+	var loaded bool
+	for _, envPath := range envPaths {
+		if err := godotenv.Load(envPath); err == nil {
+			fmt.Printf("✅ Loaded .env from: %s\n", envPath)
+			loaded = true
+			break
+		}
+	}
+
+	if !loaded {
+		fmt.Println("⚠️  No .env file found, using environment variables")
+	}
+
+	dataPath, err := expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json"))
+	if err != nil {
+		return fmt.Errorf("expand data path: %v", err)
+	}
+
+	depositsDataPath, err := expandPath(getEnv("DEPOSITS_DATA_PATH", "~/.config/waybar/deposits.json"))
+	if err != nil {
+		return fmt.Errorf("expand deposits data path: %v", err)
+	}
+
+	ledgerPath, err := expandPath(getEnv("LEDGER_PATH", "~/ObsidianVault/finances/transactions.ledger"))
+	if err != nil {
+		return fmt.Errorf("expand ledger path: %v", err)
 	}
 
 	AppConfig = &Config{
 		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramUserID:   getEnvInt64("TELEGRAM_USER_ID", 0),
-		DataPath:         expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json")),
-		DepositsDataPath: expandPath(getEnv("DEPOSITS_DATA_PATH", "~/.config/waybar/deposits.json")),
-		LedgerPath:       expandPath(getEnv("LEDGER_PATH", "~/ObsidianVault/finances/transactions.ledger")),
+		DataPath:         dataPath,
+		DepositsDataPath: depositsDataPath,
+		LedgerPath:       ledgerPath,
 	}
 
 	return nil
 }
 
-func expandPath(path string) string {
-	if len(path) > 0 && path[0] == '~' {
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, path[1:])
+func expandPath(path string) (string, error) {
+	if path == "" {
+		return "", fmt.Errorf("path cannot be empty")
 	}
-	return path
+
+	if strings.HasPrefix(path, "~/") || path == "~" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("get home directory: %v", err)
+		}
+
+		if path == "~" {
+			return home, nil
+		}
+		return filepath.Join(home, path[2:]), nil
+	}
+
+	return filepath.Abs(path)
 }
 
 func getEnv(key, defaultValue string) string {
