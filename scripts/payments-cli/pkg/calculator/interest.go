@@ -52,7 +52,10 @@ func calculateMonthlyCapitalization(amount, rate *big.Float, days int) *big.Floa
 	one := big.NewFloat(1.0)
 
 	factor := new(big.Float).Add(one, monthlyRate)
-	factor = pow(factor, int(months.Mul(months, big.NewFloat(1.0)).Sign()))
+	monthsInt := int(months.Mul(months, big.NewFloat(1.0)).Sign())
+	if monthsInt > 0 {
+		factor = pow(factor, monthsInt)
+	}
 
 	result := new(big.Float).Sub(factor, one)
 	result.Mul(result, amount)

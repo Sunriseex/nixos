@@ -86,7 +86,8 @@ func DepositList() error {
 		fmt.Printf("   Тип: %s\n", deposit.Type)
 
 		monthlyIncome := calculator.CalculateIncome(deposit, 30)
-		fmt.Printf("   Доход в месяц: ~%.2f руб.\n", monthlyIncome)
+		monthlyIncomeFloat, _ := monthlyIncome.Float64()
+		fmt.Printf("   Доход в месяц: ~%.2f руб.\n", monthlyIncomeFloat)
 		fmt.Println()
 	}
 
@@ -112,6 +113,7 @@ func DepositCalculateIncome(depositID string, days int) error {
 	for _, deposit := range data.Deposits {
 		if deposit.ID == depositID {
 			income := calculator.CalculateIncome(deposit, days)
+			incomeFloat, _ := income.Float64()
 			amountRubles := float64(deposit.Amount) / 100.0
 
 			fmt.Printf("📈 Расчет дохода по вкладу '%s':\n", deposit.Name)
@@ -119,8 +121,8 @@ func DepositCalculateIncome(depositID string, days int) error {
 			fmt.Printf("   Процентная ставка: %.2f%%\n", deposit.InterestRate)
 			fmt.Printf("   Капитализация: %s\n", deposit.Capitalization)
 			fmt.Printf("   Период: %d дней\n", days)
-			fmt.Printf("   Ожидаемый доход: %.2f руб.\n", income)
-			fmt.Printf("   Общая сумма: %.2f руб.\n", amountRubles+income)
+			fmt.Printf("   Ожидаемый доход: %.2f руб.\n", incomeFloat)
+			fmt.Printf("   Общая сумма: %.2f руб.\n", amountRubles+incomeFloat)
 
 			return nil
 		}
@@ -177,13 +179,15 @@ func DepositAccrueInterest() error {
 		var description string
 
 		if deposit.Type == "savings" {
-			income = calculator.CalculateIncome(deposit, 1)
+			incomeBig := calculator.CalculateIncome(deposit, 1)
+			income, _ = incomeBig.Float64()
 			description = "Выплата процентов"
 		} else if deposit.Type == "term" {
 			if calculator.IsDepositExpired(deposit) {
 				daysPassed := daysSince(deposit.StartDate)
 				if daysPassed > 0 {
-					income = calculator.CalculateIncome(deposit, daysPassed)
+					incomeBig := calculator.CalculateIncome(deposit, daysPassed)
+					income, _ = incomeBig.Float64()
 					description = "Выплата процентов по окончании срока"
 				}
 			} else {
