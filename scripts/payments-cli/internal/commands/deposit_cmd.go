@@ -7,117 +7,73 @@ import (
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/config"
-	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/internal/notifications"
+	"github.com/sunriseex/payments-cli/internal/services"
 	"github.com/sunriseex/payments-cli/internal/storage"
-	"github.com/sunriseex/payments-cli/pkg/calculator"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 	"github.com/sunriseex/payments-cli/pkg/utils"
-	"github.com/sunriseex/payments-cli/pkg/validation"
 )
 
 func DepositCreate(name, bank, depositType string, amount int, interestRate float64, termMonths int, promoRate *float64, promoEndDate string) error {
-	validator := validation.NewDepositValidator()
-	if err := validator.ValidateCreateRequest(name, bank, depositType, amount, interestRate, termMonths, promoRate, promoEndDate); err != nil {
-		return errors.NewValidationError(
-			"некорректные параметры вклада",
-			map[string]interface{}{
-				"name":          name,
-				"bank":          bank,
-				"type":          depositType,
-				"amount":        amount,
-				"interest_rate": interestRate,
-				"term_months":   termMonths,
-			},
-		)
+	service := services.NewDepositService()
+
+	req := &services.CreateDepositRequest{
+		Name:         name,
+		Bank:         bank,
+		Type:         depositType,
+		Amount:       amount,
+		InterestRate: interestRate,
+		TermMonths:   termMonths,
+		PromoRate:    promoRate,
+		PromoEndDate: promoEndDate,
 	}
 
-	deposit := &models.Deposit{
-		Name:          strings.TrimSpace(name),
-		Bank:          bank,
-		Type:          depositType,
-		Amount:        amount,
-		InitialAmount: amount,
-		InterestRate:  interestRate,
-		PromoRate:     promoRate,
-		PromoEndDate:  promoEndDate,
-		StartDate:     time.Now().Format("2006-01-02"),
-		AutoRenewal:   true,
+	response, err := service.Create(req)
+	if err != nil {
+		return err
 	}
 
-	if bank == "Яндекс Банк" || bank == "Yandex" {
-		deposit.Capitalization = "daily"
-	} else {
-		deposit.Capitalization = "daily"
-	}
+	fmt.Printf("✅ %s\n", response.Message)
+	fmt.Printf("   Вклад: %s\n", response.Deposit.Name)
+	fmt.Printf("   ID: %s\n", response.DepositID)
+	fmt.Printf("   Сумма: %.2f руб.\n", float64(response.Deposit.Amount)/100.0)
+	fmt.Printf("   Ставка: %.2f%%\n", response.Deposit.InterestRate)
 
-	if depositType == "term" {
-		deposit.TermMonths = termMonths
-		endDate, err := calculator.CalculateMaturityDate(deposit.StartDate, termMonths)
-		if err != nil {
-			return errors.WrapError(
-				errors.ErrCalculation,
-				"ошибка расчета даты окончания вклада",
-				err,
-			)
-		}
-		deposit.EndDate = endDate
-		deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(deposit.StartDate)
-	}
-
-	if err := validator.Validate(deposit); err != nil {
-		return errors.NewValidationError(
-			"ошибка валидации данных вклада",
-			map[string]interface{}{
-				"deposit_name":     deposit.Name,
-				"validation_error": err.Error(),
-			},
-		)
-	}
-
-	if err := storage.CreateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
-		return errors.NewStorageError("создание вклада", err)
-	}
-
-	fmt.Printf("✅ Вклад '%s' успешно создан\n", name)
 	if promoRate != nil {
 		fmt.Printf("   Промо-ставка: %.2f%% (до %s)\n", *promoRate, promoEndDate)
 	}
 
-	amountRubles := float64(amount) / 100.0
-	fmt.Printf("   Сумма: %.2f руб.\n", amountRubles)
-	fmt.Printf("   Базовая ставка: %.2f%%\n", interestRate)
-	if deposit.Type == "term" {
+	if depositType == "term" {
 		fmt.Printf("   Срок: %d месяцев\n", termMonths)
-		fmt.Printf("   Дата окончания: %s\n", deposit.EndDate)
+		fmt.Printf("   Дата окончания: %s\n", response.Deposit.EndDate)
 	}
 
 	return nil
 }
 
 func DepositList() error {
-	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+	service := services.NewDepositService()
+
+	response, err := service.List()
 	if err != nil {
-		return errors.NewStorageError("загрузка списка вкладов", err)
+		return err
 	}
 
-	if len(data.Deposits) == 0 {
+	if response.TotalCount == 0 {
 		fmt.Println("💼 Нет активных вкладов")
 		return nil
 	}
 
 	fmt.Println("💼 АКТИВНЫЕ ВКЛАДЫ:")
 	fmt.Println("===================")
-	totalAmount := 0
 
-	for i, deposit := range data.Deposits {
+	for i, deposit := range response.Deposits {
 		amountRubles := float64(deposit.Amount) / 100.0
-		totalAmount += deposit.Amount
 
 		fmt.Printf("%d. %s (%s)\n", i+1, deposit.Name, deposit.Bank)
 		fmt.Printf("   Сумма: %.2f руб.\n", amountRubles)
 
-		active, daysLeft := calculator.CheckPromoStatus(deposit)
+		active, daysLeft := services.CheckPromoStatus(deposit)
 		if active {
 			fmt.Printf("   Промо-ставка: %.2f%% (до %s, осталось %d дн.)\n",
 				*deposit.PromoRate, deposit.PromoEndDate, daysLeft)
@@ -127,225 +83,154 @@ func DepositList() error {
 
 		fmt.Printf("   Тип: %s\n", deposit.Type)
 
-		monthlyIncome := calculator.CalculateIncome(deposit, 30)
-		monthlyIncomeFloat, _ := monthlyIncome.Float64()
-		fmt.Printf("   Доход в месяц: ~%.2f руб.\n", monthlyIncomeFloat)
+		incomeReq := &services.CalculateIncomeRequest{
+			DepositID: deposit.ID,
+			Days:      30,
+		}
+		incomeResp, err := service.CalculateIncome(incomeReq)
+		if err == nil {
+			fmt.Printf("   Доход в месяц: ~%.2f руб.\n", incomeResp.ExpectedIncome)
+		} else {
+			fmt.Printf("   Доход в месяц: расчет недоступен\n")
+		}
 		fmt.Println()
 	}
 
-	totalRubles := float64(totalAmount) / 100.0
-	fmt.Printf("📊 ИТОГО: %d вкладов на сумму %.2f руб.\n", len(data.Deposits), totalRubles)
+	totalRubles := float64(response.TotalAmount) / 100.0
+	fmt.Printf("📊 ИТОГО: %d вкладов на сумму %.2f руб.\n", response.TotalCount, totalRubles)
+
 	return nil
 }
 
 func DepositTopUp(depositID string, amount int) error {
-	if amount <= 0 {
-		return errors.NewValidationError(
-			"сумма пополнения должна быть положительной",
-			map[string]interface{}{
-				"amount":     amount,
-				"deposit_id": depositID,
-			},
-		)
+	service := services.NewDepositService()
+
+	req := &services.TopUpRequest{
+		DepositID:   depositID,
+		Amount:      amount,
+		Description: "Пополнение через CLI",
 	}
 
-	if amount > 10000000 {
-		return errors.NewValidationError(
-			"сумма пополнения слишком большая",
-			map[string]interface{}{
-				"amount":      amount,
-				"max_allowed": 10000000,
-				"deposit_id":  depositID,
-			},
-		)
+	response, err := service.TopUp(req)
+	if err != nil {
+		return err
 	}
 
-	if err := storage.UpdateDepositAmount(depositID, amount, config.AppConfig.DepositsDataPath); err != nil {
-		return errors.WrapError(
-			errors.ErrStorage,
-			"ошибка пополнения вклада",
-			err,
-		)
-	}
+	fmt.Printf("✅ %s\n", response.Message)
+	fmt.Printf("   Предыдущая сумма: %.2f руб.\n", float64(response.PreviousAmount)/100.0)
+	fmt.Printf("   Новая сумма: %.2f руб.\n", float64(response.NewAmount)/100.0)
+	fmt.Printf("   Пополнено на: %.2f руб.\n", float64(amount)/100.0)
 
-	fmt.Printf("✅ Вклад успешно пополнен на %.2f руб.\n", float64(amount)/100.0)
 	return nil
 }
 
 func DepositCalculateIncome(depositID string, days int) error {
-	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+	service := services.NewDepositService()
+
+	req := &services.CalculateIncomeRequest{
+		DepositID: depositID,
+		Days:      days,
+	}
+
+	response, err := service.CalculateIncome(req)
 	if err != nil {
-		return errors.NewStorageError("загрузка данных для расчета дохода", err)
+		return err
 	}
 
-	var foundDeposit *models.Deposit
-	for i := range data.Deposits {
-		if data.Deposits[i].ID == depositID {
-			foundDeposit = &data.Deposits[i]
-			break
-		}
-	}
-
-	if foundDeposit == nil {
-		return errors.NewNotFoundError("вклад", depositID)
-	}
-
-	income := calculator.CalculateIncome(*foundDeposit, days)
-	incomeFloat, _ := income.Float64()
-	amountRubles := float64(foundDeposit.Amount) / 100.0
-
-	fmt.Printf("📈 Расчет дохода по вкладу '%s':\n", foundDeposit.Name)
-	fmt.Printf("   Сумма вклада: %.2f руб.\n", amountRubles)
-	fmt.Printf("   Процентная ставка: %.2f%%\n", foundDeposit.InterestRate)
-	fmt.Printf("   Капитализация: %s\n", foundDeposit.Capitalization)
-	fmt.Printf("   Период: %d дней\n", days)
-	fmt.Printf("   Ожидаемый доход: %.2f руб.\n", incomeFloat)
-	fmt.Printf("   Общая сумма: %.2f руб.\n", amountRubles+incomeFloat)
+	fmt.Printf("📈 Расчет дохода по вкладу '%s':\n", response.DepositName)
+	fmt.Printf("   Сумма вклада: %.2f руб.\n", response.Amount)
+	fmt.Printf("   Процентная ставка: %.2f%%\n", response.InterestRate)
+	fmt.Printf("   Капитализация: %s\n", response.Capitalization)
+	fmt.Printf("   Период: %d дней\n", response.PeriodDays)
+	fmt.Printf("   Ожидаемый доход: %.2f руб.\n", response.ExpectedIncome)
+	fmt.Printf("   Общая сумма: %.2f руб.\n", response.TotalAmount)
 
 	return nil
 }
 
 func DepositUpdate(depositID string) error {
-	deposit, err := storage.GetDepositByID(depositID, config.AppConfig.DepositsDataPath)
+	service := services.NewDepositService()
+
+	req := &services.UpdateDepositRequest{
+		DepositID: depositID,
+	}
+
+	response, err := service.Update(req)
 	if err != nil {
-		return errors.NewNotFoundError("вклад", depositID)
+		return err
 	}
 
-	if deposit.Type != "term" {
-		return errors.NewBusinessLogicError(
-			"только срочные вклады могут быть обновлены (пролонгированы)",
-			map[string]interface{}{
-				"deposit_id":   depositID,
-				"deposit_type": deposit.Type,
-			},
-		)
-	}
-
-	if !calculator.CanBeProlonged(*deposit) {
-		return errors.NewBusinessLogicError(
-			"вклад не может быть пролонгирован в данный момент",
-			map[string]interface{}{
-				"deposit_id": depositID,
-				"end_date":   deposit.EndDate,
-			},
-		)
-	}
-
-	today := time.Now().Format("2006-01-02")
-	deposit.StartDate = today
-
-	endDate, err := calculator.CalculateMaturityDate(today, deposit.TermMonths)
-	if err != nil {
-		return errors.NewCalculationError(
-			"ошибка расчета даты окончания при обновлении вклада",
-			err,
-		)
-	}
-	deposit.EndDate = endDate
-	deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(today)
-
-	validator := validation.NewDepositValidator()
-	if err := validator.Validate(deposit); err != nil {
-		return errors.NewValidationError(
-			"ошибка валидации данных после обновления",
-			map[string]interface{}{
-				"deposit_name":     deposit.Name,
-				"validation_error": err.Error(),
-			},
-		)
-	}
-
-	if err := storage.UpdateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
-		return errors.NewStorageError("обновление вклада", err)
-	}
-
-	fmt.Printf("✅ Вклад '%s' успешно обновлен\n", deposit.Name)
-	fmt.Printf("   Новая дата начала: %s\n", deposit.StartDate)
-	fmt.Printf("   Новая дата окончания: %s\n", deposit.EndDate)
-	fmt.Printf("   Дата окончания пополнения: %s\n", deposit.TopUpEndDate)
+	fmt.Printf("✅ %s\n", response.Message)
+	fmt.Printf("   Вклад: %s\n", response.DepositName)
+	fmt.Printf("   Новая дата начала: %s\n", response.StartDate)
+	fmt.Printf("   Новая дата окончания: %s\n", response.EndDate)
+	fmt.Printf("   Дата окончания пополнения: %s\n", response.TopUpEndDate)
 
 	return nil
 }
 
 func DepositAccrueInterest() error {
-	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
+	service := services.NewInterestService()
+
+	req := &services.AccrueInterestRequest{}
+
+	response, err := service.AccrueInterest(req)
 	if err != nil {
-		return errors.NewStorageError("загрузка вкладов для начисления процентов", err)
+		return err
 	}
 
-	totalAccrued := 0.0
-	accruals := 0
-	var errorsList []error
-
-	for _, deposit := range data.Deposits {
-		var income float64
-		var description string
-
-		if deposit.Type == "savings" {
-			incomeBig := calculator.CalculateIncome(deposit, 1)
-			income, _ = incomeBig.Float64()
-			description = "Ежедневная выплата процентов"
-		} else if deposit.Type == "term" {
-			if calculator.IsDepositExpired(deposit) {
-				daysPassed := daysSince(deposit.StartDate)
-				if daysPassed > 0 {
-					incomeBig := calculator.CalculateIncome(deposit, daysPassed)
-					income, _ = incomeBig.Float64()
-					description = "Выплата процентов по окончании срока"
-				}
-			} else {
-				continue
-			}
-		}
-
-		if income > 0 {
-			amountKopecks := int(income * 100)
-
-			if err := storage.RecordDepositToLedger(deposit, "interest", amountKopecks, description, config.AppConfig.LedgerPath); err != nil {
-				errMsg := errors.WrapError(
-					errors.ErrStorage,
-					fmt.Sprintf("ошибка записи в ledger для вклада '%s'", deposit.Name),
-					err,
-				)
-				errorsList = append(errorsList, errMsg)
-				continue
-			}
-
-			if err := storage.UpdateDepositAmount(deposit.ID, amountKopecks, config.AppConfig.DepositsDataPath); err != nil {
-				errMsg := errors.WrapError(
-					errors.ErrStorage,
-					fmt.Sprintf("ошибка обновления суммы вклада '%s'", deposit.Name),
-					err,
-				)
-				errorsList = append(errorsList, errMsg)
-				continue
-			}
-
-			totalAccrued += income
-			accruals++
-
-			fmt.Printf("✅ Начислены проценты по вкладу '%s': %.2f руб.\n", deposit.Name, income)
-		}
-	}
-
-	if accruals > 0 {
-		fmt.Printf("\n📊 Всего начислено: %.2f руб. по %d вкладам\n", totalAccrued, accruals)
+	if response.SuccessCount > 0 {
+		fmt.Printf("✅ %s\n", response.Message)
 	} else {
 		fmt.Println("ℹ️  Не найдено вкладов для начисления процентов")
 	}
 
-	if len(errorsList) > 0 {
-		fmt.Println("\n⚠️  Произошли ошибки при начислении процентов:")
-		for _, err := range errorsList {
-			fmt.Printf("   • %s\n", errors.GetUserFriendlyMessage(err))
+	if response.ErrorCount > 0 {
+		fmt.Printf("\n⚠️  Произошли ошибки при начислении процентов (%d ошибок):\n", response.ErrorCount)
+		for _, result := range response.Results {
+			if !result.Success {
+				fmt.Printf("   • %s: %s\n", result.DepositName, errors.GetUserFriendlyMessage(result.Error))
+			}
 		}
-		return errors.NewBusinessLogicError(
-			"не все проценты были начислены из-за ошибок",
-			map[string]interface{}{
-				"total_errors":        len(errorsList),
-				"successful_accruals": accruals,
-			},
-		)
+	}
+
+	return nil
+}
+
+func DepositFind(name, bank string) error {
+	service := services.NewDepositService()
+
+	req := &services.FindDepositRequest{
+		Name: name,
+		Bank: bank,
+	}
+
+	response, err := service.Find(req)
+	if err != nil {
+		return err
+	}
+
+	if !response.Found {
+		fmt.Printf("Вклад '%s' в банке '%s' не найден\n", name, bank)
+		return nil
+	}
+
+	deposit := response.Deposit
+	amountRubles := float64(deposit.Amount) / 100.0
+	fmt.Printf("Найден вклад:\n")
+	fmt.Printf("  ID: %s\n", deposit.ID)
+	fmt.Printf("  Название: %s\n", deposit.Name)
+	fmt.Printf("  Банк: %s\n", deposit.Bank)
+	fmt.Printf("  Тип: %s\n", deposit.Type)
+	fmt.Printf("  Сумма: %.2f руб.\n", amountRubles)
+	fmt.Printf("  Ставка: %.2f%%\n", deposit.InterestRate)
+
+	if deposit.Type == "term" {
+		fmt.Printf("  Срок: %d месяцев\n", deposit.TermMonths)
+		if deposit.EndDate != "" {
+			daysLeft := utils.DaysUntil(deposit.EndDate)
+			fmt.Printf("  До окончания: %d дней\n", daysLeft)
+		}
 	}
 
 	return nil
@@ -477,37 +362,6 @@ func ParseTerm(termStr string) (int, error) {
 		)
 	}
 	return term, nil
-}
-
-func DepositFind(name, bank string) error {
-	deposit, err := storage.FindDepositByNameAndBank(name, bank, config.AppConfig.DepositsDataPath)
-	if err != nil {
-		return errors.NewStorageError("поиск вклада", err)
-	}
-
-	if deposit == nil {
-		fmt.Printf("Вклад '%s' в банке '%s' не найден\n", name, bank)
-		return nil
-	}
-
-	amountRubles := float64(deposit.Amount) / 100.0
-	fmt.Printf("Найден вклад:\n")
-	fmt.Printf("  ID: %s\n", deposit.ID)
-	fmt.Printf("  Название: %s\n", deposit.Name)
-	fmt.Printf("  Банк: %s\n", deposit.Bank)
-	fmt.Printf("  Тип: %s\n", deposit.Type)
-	fmt.Printf("  Сумма: %.2f руб.\n", amountRubles)
-	fmt.Printf("  Ставка: %.2f%%\n", deposit.InterestRate)
-
-	if deposit.Type == "term" {
-		fmt.Printf("  Срок: %d месяцев\n", deposit.TermMonths)
-		if deposit.EndDate != "" {
-			daysLeft := utils.DaysUntil(deposit.EndDate)
-			fmt.Printf("  До окончания: %d дней\n", daysLeft)
-		}
-	}
-
-	return nil
 }
 
 func daysSince(startDate string) int {

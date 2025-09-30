@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"github.com/sunriseex/payments-cli/internal/commands"
 	"github.com/sunriseex/payments-cli/internal/config"
 	"github.com/sunriseex/payments-cli/internal/notifications"
+	"github.com/sunriseex/payments-cli/pkg/errors"
 )
 
 func main() {
@@ -20,201 +22,187 @@ func main() {
 	}
 
 	if len(os.Args) == 1 {
-		if err := commands.DepositList(); err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println()
-		if err := commands.DepositCheckNotifications(); err != nil {
-			log.Fatal(err)
-		}
+		executeDefaultCommand()
 		return
 	}
 
-	switch os.Args[1] {
-	case "list":
-		if err := commands.DepositList(); err != nil {
-			log.Fatal(err)
-		}
-	case "topup":
-		if len(os.Args) < 4 {
-			log.Fatal("Использование: deposit-manager topup <deposit_id> <amount> [description]")
-		}
-		amount, err := parseAmount(os.Args[3])
-		if err != nil {
-			log.Fatalf("Неверная сумма: %v", err)
-		}
-
-		if err := commands.DepositTopUp(os.Args[2], amount); err != nil {
-			log.Fatal(err)
-		}
-	case "notifications", "check":
-		if err := commands.DepositCheckNotifications(); err != nil {
-			log.Fatal(err)
-		}
-	case "calculate":
-		if len(os.Args) < 4 {
-			log.Fatal("Использование: deposit-manager calculate <deposit_id> <days>")
-		}
-		days, err := parseDays(os.Args[3])
-		if err != nil {
-			log.Fatalf("Неверное количество дней: %v", err)
-		}
-		if err := commands.DepositCalculateIncome(os.Args[2], days); err != nil {
-			log.Fatal(err)
-		}
-	case "create":
-		if len(os.Args) < 8 {
-			showCreateUsage()
-			os.Exit(1)
-		}
-		if err := handleDepositCreate(os.Args[2:]); err != nil {
-			log.Fatal(err)
-		}
-	case "update":
-		if len(os.Args) < 3 {
-			log.Fatal("Использование: deposit-manager update <deposit_id>")
-		}
-		if err := commands.DepositUpdate(os.Args[2]); err != nil {
-			log.Fatal(err)
-		}
-	case "accrue-interest":
-		if err := commands.DepositAccrueInterest(); err != nil {
-			log.Fatal(err)
-		}
-	case "help", "-h", "--help":
-		showHelp()
-	default:
-		fmt.Printf("Неизвестная команда: %s\n\n", os.Args[1])
-		showHelp()
+	if err := executeCommand(os.Args[1], os.Args[2:]); err != nil {
+		userMsg := errors.GetUserFriendlyMessage(err)
+		log.Printf("Ошибка: %s", userMsg)
 		os.Exit(1)
 	}
 }
 
-func parseAmount(amountStr string) (int, error) {
-	amount, err := commands.ParseRubles(amountStr)
-	if err != nil {
-		return 0, fmt.Errorf("неверный формат суммы: %v", err)
+func executeDefaultCommand() {
+	if err := commands.DepositList(); err != nil {
+		log.Fatal(err)
 	}
-	return amount, nil
+	fmt.Println()
+	if err := commands.DepositCheckNotifications(); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func parseDays(daysStr string) (int, error) {
-	days, err := commands.ParseDays(daysStr)
-	if err != nil {
-		return 0, fmt.Errorf("неверный формат дней: %v", err)
+func executeCommand(command string, args []string) error {
+	switch command {
+	case "list":
+		return commands.DepositList()
+	case "topup":
+		return handleTopUpCommand(args)
+	case "notifications", "check":
+		return commands.DepositCheckNotifications()
+	case "calculate":
+		return handleCalculateCommand(args)
+	case "create":
+		return handleCreateCommand(args)
+	case "update":
+		return handleUpdateCommand(args)
+	case "accrue-interest":
+		return commands.DepositAccrueInterest()
+	case "find":
+		return handleFindCommand(args)
+	case "help", "-h", "--help":
+		showHelp()
+		return nil
+	default:
+		return fmt.Errorf("неизвестная команда: %s\n\nИспользуйте 'deposit-manager help' для справки", command)
 	}
-	return days, nil
 }
 
-func handleDepositCreate(args []string) error {
-	var name, bank, depositType, promoEndDate string
-	var amount int
-	var rate float64
-	var termMonths int
-	var promoRate *float64
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--name":
-			if i+1 < len(args) {
-				name = args[i+1]
-				i++
-			}
-		case "--bank":
-			if i+1 < len(args) {
-				bank = args[i+1]
-				i++
-			}
-		case "--type":
-			if i+1 < len(args) {
-				depositType = args[i+1]
-				i++
-			}
-		case "--amount":
-			if i+1 < len(args) {
-				amt, err := parseAmount(args[i+1])
-				if err != nil {
-					return err
-				}
-				amount = amt
-				i++
-			}
-		case "--rate":
-			if i+1 < len(args) {
-				r, err := parseRate(args[i+1])
-				if err != nil {
-					return err
-				}
-				rate = r
-				i++
-			}
-		case "--term":
-			if i+1 < len(args) {
-				term, err := parseTerm(args[i+1])
-				if err != nil {
-					return err
-				}
-				termMonths = term
-				i++
-			}
-		case "--promo-rate":
-			if i+1 < len(args) {
-				pr, err := parseRate(args[i+1])
-				if err != nil {
-					return err
-				}
-				promoRate = &pr
-				i++
-			}
-		case "--promo-end":
-			if i+1 < len(args) {
-				promoEndDate = args[i+1]
-				i++
-			}
-		}
+func handleTopUpCommand(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("использование: deposit-manager topup <deposit_id> <amount>")
 	}
 
-	if name == "" {
+	amount, err := commands.ParseRubles(args[1])
+	if err != nil {
+		return err
+	}
+
+	return commands.DepositTopUp(args[0], amount)
+}
+
+func handleCalculateCommand(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("использование: deposit-manager calculate <deposit_id> <days>")
+	}
+
+	days, err := commands.ParseDays(args[1])
+	if err != nil {
+		return err
+	}
+
+	return commands.DepositCalculateIncome(args[0], days)
+}
+
+func handleUpdateCommand(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("использование: deposit-manager update <deposit_id>")
+	}
+
+	return commands.DepositUpdate(args[0])
+}
+
+func handleFindCommand(args []string) error {
+	if len(args) < 2 {
+		return fmt.Errorf("использование: deposit-manager find <name> <bank>")
+	}
+
+	return commands.DepositFind(args[0], args[1])
+}
+
+func handleCreateCommand(args []string) error {
+	if len(args) < 6 {
+		showCreateUsage()
+		return fmt.Errorf("недостаточно аргументов")
+	}
+
+	var createParams struct {
+		name, bank, depositType, promoEndDate string
+		amount                                int
+		rate                                  float64
+		termMonths                            int
+		promoRate                             *float64
+	}
+
+	flagSet := flag.NewFlagSet("create", flag.ContinueOnError)
+	flagSet.StringVar(&createParams.name, "name", "", "Название вклада")
+	flagSet.StringVar(&createParams.bank, "bank", "", "Банк")
+	flagSet.StringVar(&createParams.depositType, "type", "", "Тип вклада (savings|term)")
+	flagSet.StringVar(&createParams.promoEndDate, "promo-end", "", "Дата окончания промо-ставки")
+
+	var amountStr, rateStr, termStr, promoRateStr string
+	flagSet.StringVar(&amountStr, "amount", "", "Сумма вклада")
+	flagSet.StringVar(&rateStr, "rate", "", "Процентная ставка")
+	flagSet.StringVar(&termStr, "term", "", "Срок в месяцах")
+	flagSet.StringVar(&promoRateStr, "promo-rate", "", "Промо-ставка")
+
+	if err := flagSet.Parse(args); err != nil {
+		return err
+	}
+
+	if err := validateAndParseCreateParams(&createParams, amountStr, rateStr, termStr, promoRateStr); err != nil {
+		return err
+	}
+
+	return commands.DepositCreate(
+		createParams.name,
+		createParams.bank,
+		createParams.depositType,
+		createParams.amount,
+		createParams.rate,
+		createParams.termMonths,
+		createParams.promoRate,
+		createParams.promoEndDate,
+	)
+}
+
+func validateAndParseCreateParams(params *struct {
+	name, bank, depositType, promoEndDate string
+	amount                                int
+	rate                                  float64
+	termMonths                            int
+	promoRate                             *float64
+}, amountStr, rateStr, termStr, promoRateStr string) error {
+	if params.name == "" {
 		return fmt.Errorf("необходимо указать название вклада (--name)")
 	}
-	if bank == "" {
+	if params.bank == "" {
 		return fmt.Errorf("необходимо указать банк (--bank)")
 	}
-	if depositType == "" {
+	if params.depositType == "" {
 		return fmt.Errorf("необходимо указать тип вклада (--type savings|term)")
 	}
-	if amount <= 0 {
-		return fmt.Errorf("необходимо указать положительную сумму (--amount)")
-	}
-	if rate <= 0 {
-		return fmt.Errorf("необходимо указать положительную процентную ставку (--rate)")
-	}
 
-	if depositType == "term" && termMonths <= 0 {
-		return fmt.Errorf("для срочного вклада необходимо указать срок в месяцах (--term)")
+	amount, err := commands.ParseRubles(amountStr)
+	if err != nil {
+		return err
 	}
+	params.amount = amount
 
-	if promoRate != nil && promoEndDate == "" {
-		return fmt.Errorf("при указании промо-ставки необходимо указать дату окончания (--promo-end)")
-	}
-
-	return commands.DepositCreate(name, bank, depositType, amount, rate, termMonths, promoRate, promoEndDate)
-}
-
-func parseRate(rateStr string) (float64, error) {
 	rate, err := commands.ParseRate(rateStr)
 	if err != nil {
-		return 0, fmt.Errorf("неверный формат процентной ставки: %v", err)
+		return err
 	}
-	return rate, nil
-}
+	params.rate = rate
 
-func parseTerm(termStr string) (int, error) {
-	term, err := commands.ParseTerm(termStr)
-	if err != nil {
-		return 0, fmt.Errorf("неверный формат срока: %v", err)
+	if params.depositType == "term" {
+		term, err := commands.ParseTerm(termStr)
+		if err != nil {
+			return err
+		}
+		params.termMonths = term
 	}
-	return term, nil
+
+	if promoRateStr != "" {
+		promoRate, err := commands.ParseRate(promoRateStr)
+		if err != nil {
+			return err
+		}
+		params.promoRate = &promoRate
+	}
+
+	return nil
 }
 
 func showCreateUsage() {
@@ -232,12 +220,13 @@ func showHelp() {
 Команды:
   deposit-manager                    - Показать список вкладов и уведомления
   deposit-manager list              - Показать список всех вкладов
-  deposit-manager topup <id> <amount> [desc] - Пополнить вклад
+  deposit-manager topup <id> <amount> - Пополнить вклад
   deposit-manager notifications     - Проверить уведомления по вкладам
   deposit-manager calculate <id> <days> - Рассчитать доход по вкладу
   deposit-manager create            - Создать новый вклад
   deposit-manager update <id>       - Обновить даты вклада (пролонгация)
   deposit-manager accrue-interest   - Автоматическое начисление процентов
+  deposit-manager find <name> <bank> - Найти вклад по имени и банку
   deposit-manager help              - Показать эту справку
 
 Примеры:

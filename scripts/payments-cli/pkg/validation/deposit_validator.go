@@ -40,8 +40,8 @@ func NewDepositValidator() *DepositValidator {
 			"end":       true,
 			"quarterly": true,
 		},
-		minAmount: 1000,      // 10 рублей в копейках
-		maxAmount: 100000000, // 1 миллион рублей в копейках
+		minAmount: 1000,
+		maxAmount: 100000000,
 	}
 }
 
