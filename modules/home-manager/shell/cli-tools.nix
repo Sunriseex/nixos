@@ -4,22 +4,22 @@
   home.packages = with pkgs; [
     tree
     bat
+    bc
     lsd
-    yazi # Terminal file manager
-    htop # Process manager
-    btop # Advanced process manager
+    yazi
+    htop
+    btop
     killall
-    # Other tools
-    gh # GitHub CLI
+    gh
     wget
     toilet
     zip
     unzip
     ffmpeg
-    upower # Battery utility
+    upower
     wl-clipboard
-    fanctl # Fan control
-    gamemode # Gaming optimiser
-    tlp # Advanced power manager
+    fanctl
+    gamemode
+    tlp
   ];
 }
