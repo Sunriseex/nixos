@@ -36,11 +36,11 @@ show_categories() {
 
 show_accounts() {
     echo "Доступные счета:"
-    echo "1. Liabilities:YandexPay"
-    echo "2. Liabilities:Tinkoff"
-    echo "3. Liabilities:AlfaBank"
-    echo "4. Assets:Cash"
-    echo "5. Assets:TinkoffCard"
+    echo "1. b:Yandex"
+    echo "2. b:Tinkoff"
+    echo "3. b:AlfaBank"
+    echo "4. a:Cash"
+    echo "5. a:TinkoffCard"
 }
 
 get_category() {
@@ -62,12 +62,12 @@ get_category() {
 get_account() {
     local account_num=$1
     case $account_num in
-    1) echo "Liabilities:YandexPay" ;;
-    2) echo "Liabilities:Tinkoff" ;;
-    3) echo "Liabilities:AlfaBank" ;;
-    4) echo "Assets:Cash" ;;
-    5) echo "Assets:TinkoffCard" ;;
-    *) echo "Liabilities:YandexPay" ;;
+    1) echo "b:Yandex" ;;
+    2) echo "b:Tinkoff" ;;
+    3) echo "b:AlfaBank" ;;
+    4) echo "a:Cash" ;;
+    5) echo "a:TinkoffCard" ;;
+    *) echo "b:Yandex" ;;
     esac
 }
 
