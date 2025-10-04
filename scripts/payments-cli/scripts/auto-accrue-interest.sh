@@ -1,19 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Скрипт для автоматического начисления процентов (для cron)
+log() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LEDGER_PATH="$HOME/ObsidianVault/finances/transactions.ledger"
+error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+warn() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
 
 # Логируем запуск
-echo "$(date): Запуск автоматического начисления процентов" >>"$SCRIPT_DIR/interest-accrual.log"
+info "$(date): Запуск автоматического начисления процентов"
 
 # Выполняем начисление
-"$SCRIPT_DIR/deposit-interactive.sh" accrue-interest
-
-# Проверяем результат
-if [ $? -eq 0 ]; then
-    echo "$(date): Начисление процентов завершено успешно" >>"$SCRIPT_DIR/interest-accrual.log"
+if "/home/snrx/nixos/scripts/payments-cli/scripts/deposit-interactive.sh" accrue-interest; then
+    info "$(date): Начисление процентов завершено успешно"
 else
-    echo "$(date): Ошибка при начислении процентов" >>"$SCRIPT_DIR/interest-accrual.log"
+    error "$(date): Ошибка при начислении процентов (код: $?)"
+    exit 1
 fi
