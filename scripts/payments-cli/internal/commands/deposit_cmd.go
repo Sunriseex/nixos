@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/sunriseex/payments-cli/internal/config"
 	"github.com/sunriseex/payments-cli/internal/notifications"
 	"github.com/sunriseex/payments-cli/internal/services"
 	"github.com/sunriseex/payments-cli/internal/storage"
+	"github.com/sunriseex/payments-cli/pkg/dates"
 	"github.com/sunriseex/payments-cli/pkg/errors"
-	"github.com/sunriseex/payments-cli/pkg/utils"
 )
 
 func DepositCreate(name, bank, depositType string, amount int, interestRate float64, termMonths int, promoRate *float64, promoEndDate string) error {
@@ -228,7 +227,7 @@ func DepositFind(name, bank string) error {
 	if deposit.Type == "term" {
 		fmt.Printf("  Срок: %d месяцев\n", deposit.TermMonths)
 		if deposit.EndDate != "" {
-			daysLeft := utils.DaysUntil(deposit.EndDate)
+			daysLeft := dates.DaysUntil(deposit.EndDate)
 			fmt.Printf("  До окончания: %d дней\n", daysLeft)
 		}
 	}
@@ -362,31 +361,6 @@ func ParseTerm(termStr string) (int, error) {
 		)
 	}
 	return term, nil
-}
-
-func daysSince(startDate string) int {
-	start, err := time.Parse("2006-01-02", startDate)
-	if err != nil {
-		return 0
-	}
-	days := int(time.Since(start).Hours() / 24)
-	if days < 0 {
-		return 0
-	}
-	return days
-}
-
-func formatBankName(bank string) string {
-	switch bank {
-	case "Яндекс Банк", "Yandex":
-		return "Yandex"
-	case "Альфа Банк", "Alfa":
-		return "AlfaBank"
-	case "Тинькофф", "Tinkoff":
-		return "Tbank"
-	default:
-		return strings.ReplaceAll(bank, " ", "")
-	}
 }
 
 func DepositCheckNotifications() error {

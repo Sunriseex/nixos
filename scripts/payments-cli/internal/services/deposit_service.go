@@ -7,6 +7,7 @@ import (
 	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/internal/storage"
 	"github.com/sunriseex/payments-cli/pkg/calculator"
+	"github.com/sunriseex/payments-cli/pkg/dates"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 	"github.com/sunriseex/payments-cli/pkg/validation"
 )
@@ -73,7 +74,7 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 
 	if req.Type == "term" {
 		deposit.TermMonths = req.TermMonths
-		endDate, err := calculator.CalculateMaturityDate(deposit.StartDate, req.TermMonths)
+		endDate, err := dates.CalculateMaturityDate(deposit.StartDate, req.TermMonths)
 		if err != nil {
 			return nil, errors.NewCalculationError(
 				"ошибка расчета даты окончания вклада",
@@ -81,7 +82,7 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 			)
 		}
 		deposit.EndDate = endDate
-		deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(deposit.StartDate)
+		deposit.TopUpEndDate = dates.CalculateTopUpEndDate(deposit.StartDate)
 	}
 
 	if err := s.validator.Validate(deposit); err != nil {
@@ -248,7 +249,7 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 		)
 	}
 
-	if !calculator.CanBeProlonged(*deposit) {
+	if !dates.CanBeProlonged(deposit.EndDate) {
 		return nil, errors.NewBusinessLogicError(
 			"вклад не может быть пролонгирован в данный момент",
 			map[string]interface{}{
@@ -261,7 +262,7 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 	today := time.Now().Format("2006-01-02")
 	deposit.StartDate = today
 
-	endDate, err := calculator.CalculateMaturityDate(today, deposit.TermMonths)
+	endDate, err := dates.CalculateMaturityDate(today, deposit.TermMonths)
 	if err != nil {
 		return nil, errors.NewCalculationError(
 			"ошибка расчета даты окончания при обновлении вклада",
@@ -269,7 +270,7 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 		)
 	}
 	deposit.EndDate = endDate
-	deposit.TopUpEndDate = calculator.CalculateTopUpEndDate(today)
+	deposit.TopUpEndDate = dates.CalculateTopUpEndDate(today)
 
 	if err := s.validator.Validate(deposit); err != nil {
 		return nil, errors.NewValidationError(

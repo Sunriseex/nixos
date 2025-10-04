@@ -8,6 +8,7 @@ import (
 	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/internal/storage"
 	"github.com/sunriseex/payments-cli/pkg/calculator"
+	"github.com/sunriseex/payments-cli/pkg/dates"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 )
 
@@ -127,7 +128,7 @@ func (s *InterestService) calculateDailyInterest(deposit models.Deposit) (float6
 		incomeFloat, _ := income.Float64()
 		return incomeFloat, "Ежедневная выплата процентов"
 	case "term":
-		if calculator.IsDepositExpired(deposit) {
+		if dates.IsDepositExpired(deposit.EndDate) {
 			daysPassed := s.daysSince(deposit.StartDate)
 			if daysPassed > 0 {
 				income := calculator.CalculateIncome(deposit, daysPassed)
