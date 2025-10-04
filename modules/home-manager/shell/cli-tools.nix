@@ -21,5 +21,6 @@
     fanctl
     gamemode
     tlp
+    speedtest-cli
   ];
 }

@@ -102,7 +102,7 @@
     razer-cli
     nftables
     jq
-    speedtest-cli
+
   ];
   # Enabled services
   services.openssh.enable = true;

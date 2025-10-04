@@ -150,20 +150,22 @@ func MarkPaid() error {
 	return nil
 }
 func extendPaymentDate(payment models.Payment) string {
-	due, err := time.Parse("2006-01-02", payment.DueDate)
-	if err != nil {
-		due = time.Now()
+	baseDate := time.Now()
+
+	if payment.Type == "one-time" {
+		return baseDate.Format("2006-01-02")
 	}
+
 	if payment.DaysInterval > 0 {
-		return due.AddDate(0, 0, payment.DaysInterval).Format("2006-01-02")
+		return baseDate.AddDate(0, 0, payment.DaysInterval).Format("2006-01-02")
 	}
 	switch payment.Type {
 	case "yearly":
-		return due.AddDate(1, 0, 0).Format("2006-01-02")
+		return baseDate.AddDate(1, 0, 0).Format("2006-01-02")
 	case "monthly":
-		return due.AddDate(0, 1, 0).Format("2006-01-02")
+		return baseDate.AddDate(0, 1, 0).Format("2006-01-02")
 	default:
-		return due.Format("2006-01-02")
+		return baseDate.AddDate(0, 1, 0).Format("2006-01-02")
 	}
 }
 
