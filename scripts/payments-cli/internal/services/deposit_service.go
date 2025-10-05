@@ -251,9 +251,12 @@ type CalculateIncomeResponse struct {
 }
 
 func (s *DepositService) CalculateIncome(req *CalculateIncomeRequest) (*CalculateIncomeResponse, error) {
+
+	slog.Debug("Рассчет дохода по вкладу", "deposit_id", req.DepositID, "days", req.Days)
+
 	if req.Days <= 0 {
 
-		slog.Warn("Попытка расчета дохода неположительной даты",
+		slog.Warn("Некорректный период расчета",
 			"deposit_id", req.DepositID,
 			"days", req.Days)
 
@@ -268,7 +271,7 @@ func (s *DepositService) CalculateIncome(req *CalculateIncomeRequest) (*Calculat
 	deposit, err := storage.GetDepositByID(req.DepositID, config.AppConfig.DepositsDataPath)
 	if err != nil {
 
-		slog.Error("Ошибка получения данных о вкладе по ID",
+		slog.Error("Ошибка получения вклада для расчета дохода",
 			"deposit_id", req.DepositID,
 			"error", err)
 
@@ -279,9 +282,24 @@ func (s *DepositService) CalculateIncome(req *CalculateIncomeRequest) (*Calculat
 		)
 	}
 
+	active, daysUntilPromoEnd := calculator.CheckPromoStatus(*deposit)
+	if active {
+		slog.Debug("Учтена промо-ставка при расчете",
+			"promo_rate", *deposit.PromoRate,
+			"promo_end_date", deposit.PromoEndDate,
+			"days_until_promo_end", daysUntilPromoEnd,
+			"base_rate", deposit.InterestRate)
+	}
+
 	income := calculator.CalculateIncome(*deposit, req.Days)
 	incomeFloat, _ := income.Float64()
 	amountRubles := float64(deposit.Amount) / 100.0
+
+	slog.Debug("Расчет дохода завершен",
+		"deposit_id", req.DepositID,
+		"income", incomeFloat,
+		"amount", amountRubles,
+		"total_days", req.Days)
 
 	return &CalculateIncomeResponse{
 		Success:        true,

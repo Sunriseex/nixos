@@ -136,6 +136,15 @@ func DepositCalculateIncome(depositID string, days int) error {
 		return err
 	}
 
+	deposit, err := storage.GetDepositByID(depositID, config.AppConfig.DepositsDataPath)
+	if err == nil && deposit.PromoRate != nil {
+		active, daysUntilPromoEnd := services.CheckPromoStatus(*deposit)
+		if active {
+			fmt.Printf("🎯 Учтена промо-ставка: %.2f%% (действует еще %d дней)\n",
+				*deposit.PromoRate, daysUntilPromoEnd)
+		}
+	}
+
 	fmt.Printf("📈 Расчет дохода по вкладу '%s':\n", response.DepositName)
 	fmt.Printf("   Сумма вклада: %.2f руб.\n", response.Amount)
 	fmt.Printf("   Процентная ставка: %.2f%%\n", response.InterestRate)

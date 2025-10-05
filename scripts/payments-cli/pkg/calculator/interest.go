@@ -7,6 +7,42 @@ import (
 	"github.com/sunriseex/payments-cli/internal/models"
 )
 
+func calculateIncomeWithPromoTransition(deposit models.Deposit, amount *big.Float, totalDays, promoDaysRemaining int) *big.Float {
+	var incomePromo *big.Float
+	if deposit.PromoRate != nil {
+		promoRate := big.NewFloat(*deposit.PromoRate)
+		switch deposit.Capitalization {
+		case "daily":
+			incomePromo = calculateDailyCapitalization(amount, promoRate, promoDaysRemaining, 365)
+		case "monthly":
+			incomePromo = calculateMonthlyCapitalization(amount, promoRate, promoDaysRemaining)
+		case "end":
+			incomePromo = calculateEndTerm(amount, promoRate, promoDaysRemaining)
+		default:
+			incomePromo = calculateEndTerm(amount, promoRate, promoDaysRemaining)
+
+		}
+
+	} else {
+		incomePromo = new(big.Float).SetInt64(0)
+	}
+	amountAfterPromo := new(big.Float).Add(amount, incomePromo)
+	remainingDays := totalDays - promoDaysRemaining
+	baseRate := big.NewFloat(deposit.InterestRate)
+	var incomeRemaining *big.Float
+	switch deposit.Capitalization {
+	case "daily":
+		incomeRemaining = calculateDailyCapitalization(amountAfterPromo, baseRate, remainingDays, 365)
+	case "monthly":
+		incomeRemaining = calculateMonthlyCapitalization(amountAfterPromo, baseRate, remainingDays)
+	case "end":
+		incomeRemaining = calculateEndTerm(amountAfterPromo, baseRate, remainingDays)
+	default:
+		incomeRemaining = calculateEndTerm(amountAfterPromo, baseRate, remainingDays)
+	}
+	return new(big.Float).Add(incomePromo, incomeRemaining)
+}
+
 func CalculateIncome(deposit models.Deposit, days int) *big.Float {
 	if deposit.Amount <= 0 || days <= 0 {
 		return new(big.Float).SetInt64(0)
@@ -14,6 +50,12 @@ func CalculateIncome(deposit models.Deposit, days int) *big.Float {
 
 	amount := new(big.Float).SetInt64(int64(deposit.Amount))
 	amount.Quo(amount, big.NewFloat(100.0))
+
+	active, daysUntilPromoEnd := CheckPromoStatus(deposit)
+
+	if active && daysUntilPromoEnd > 0 && days > daysUntilPromoEnd {
+		return calculateIncomeWithPromoTransition(deposit, amount, days, daysUntilPromoEnd)
+	}
 
 	effectiveRate := getEffectiveRateBig(deposit)
 

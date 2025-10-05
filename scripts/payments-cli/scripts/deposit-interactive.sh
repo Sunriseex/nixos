@@ -126,6 +126,76 @@ calculate_earned_interest() {
     echo "0.00"
 }
 
+calculate_income_interactive() {
+    echo "=========================================="
+    echo "Расчет дохода по вкладу"
+    echo "=========================================="
+
+    local deposits_list
+    deposits_list=$(deposit-manager list 2>/dev/null)
+
+    if [[ -z "$deposits_list" ]]; then
+        error "Нет доступных вкладов для расчета"
+        return 1
+    fi
+
+    echo "Ваши вклады:"
+    echo "$deposits_list"
+    echo ""
+
+    local deposits=()
+    local i=1
+
+    while IFS= read -r line; do
+        if [[ $line =~ [0-9]+\.\ ([^\(]+)\ \(([^\)]+)\) ]]; then
+            deposit_name="${BASH_REMATCH[1]}"
+            bank_name="${BASH_REMATCH[2]}"
+            deposits[i]="$deposit_name|$bank_name"
+            echo "  $i) $deposit_name ($bank_name)"
+            ((i++))
+        fi
+    done <<<"$deposits_list"
+
+    if [[ ${#deposits[@]} -eq 0 ]]; then
+        error "Не удалось распознать список вкладов"
+        return 1
+    fi
+
+    while true; do
+        read -p "Выберите вклад [1-$((i - 1))]: " choice
+        if [[ $choice =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le $((i - 1)) ]]; then
+            selected="${deposits[$choice]}"
+            deposit_name=$(echo "$selected" | cut -d'|' -f1)
+            bank_name=$(echo "$selected" | cut -d'|' -f2)
+            break
+        else
+            error "Введите число от 1 до $((i - 1))"
+        fi
+    done
+
+    log "Поиск вклада '$deposit_name' в банке '$bank_name'..."
+    deposit_id=$(jq -r --arg name "$deposit_name" --arg bank "$bank_name" '.deposits[] | select(.name == $name and .bank == $bank) | .id' "$DEPOSITS_FILE" 2>/dev/null)
+
+    if [[ -z "$deposit_id" || "$deposit_id" == "null" ]]; then
+        error "Не удалось найти ID вклада '$deposit_name' в банке '$bank_name'"
+        return 1
+    fi
+
+    while true; do
+        read -p "Введите количество дней для расчета: " days
+        if [[ $days =~ ^[0-9]+$ ]] && [[ $days -gt 0 ]]; then
+            break
+        else
+            error "Введите положительное целое число"
+        fi
+    done
+
+    log "Расчет дохода по вкладу '$deposit_name'..."
+    deposit-manager calculate "$deposit_id" "$days"
+
+    return $?
+}
+
 find_deposit_id() {
     local name="$1"
     local bank="$2"
@@ -625,10 +695,7 @@ main() {
             bulk_topup
             ;;
         5)
-            echo ""
-            read -p "Введите ID вклада: " deposit_id
-            read -p "Введите количество дней для расчета: " days
-            deposit-manager calculate "$deposit_id" "$days"
+            calculate_income_interactive
             ;;
         6)
             record_interest_interactive
@@ -685,9 +752,11 @@ case "${1:-}" in
 "calculate")
     if [[ $# -ge 3 ]]; then
         deposit-manager calculate "$2" "$3"
-    else
+    elif [[ $# -ge 2 ]]; then
         error "Использование: $0 calculate <deposit_id> <days>"
         exit 1
+    else
+        calculate_income_interactive
     fi
     ;;
 "interest")
