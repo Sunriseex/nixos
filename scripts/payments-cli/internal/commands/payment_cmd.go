@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/sunriseex/payments-cli/internal/config"
 	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/internal/storage"
@@ -292,7 +294,7 @@ func AddPayment() error {
 	if err != nil {
 		data = &models.PaymentData{Payments: []models.Payment{}}
 	}
-	id := fmt.Sprintf("%s_%s_%s", strings.ToLower(strings.ReplaceAll(*name, " ", "_")), finalDueDate, *paymentType)
+	id := uuid.New().String()
 	newPayment := models.Payment{
 		ID:            id,
 		Name:          *name,
