@@ -217,38 +217,6 @@ find_deposit_id() {
     fi
 }
 
-record_interest_interactive() {
-    echo "=========================================="
-    echo "Запись начисленных процентов в ledger"
-    echo "=========================================="
-
-    echo "Список вкладов:"
-    deposit-manager list
-
-    echo ""
-    read -p "Введите название вклада: " name
-    read -p "Введите банк: " bank
-    read -p "Введите сумму процентов: " amount
-    read -p "Введите количество дней: " days
-
-    if [[ ! $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] || [[ $(echo "$amount <= 0" | bc -l) -eq 1 ]]; then
-        error "Некорректная сумма"
-        return 1
-    fi
-
-    if [[ ! $days =~ ^[0-9]+$ ]] || [[ $days -le 0 ]]; then
-        error "Некорректное количество дней"
-        return 1
-    fi
-
-    local to_account=$(get_default_account "$bank" "to")
-    echo "Счет для зачисления процентов:"
-    read -p "  [по умолчанию: $to_account]: " custom_to_account
-    to_account=${custom_to_account:-$to_account}
-
-    record_interest "$name" "$amount" "$days" "$to_account"
-}
-
 check_deposit_exists() {
     local name="$1"
     local bank="$2"
@@ -303,7 +271,6 @@ create_new_deposit() {
         command="$command --term \"$term\""
     fi
 
-    # Добавляем параметры промо-ставки если они указаны
     if [[ -n "$promo_rate_value" ]]; then
         command="$command --promo-rate \"$promo_rate_value\""
     fi
@@ -331,7 +298,6 @@ topup_existing_deposit() {
 
     log "Пополнение существующего вклада: $name"
 
-    # Получаем ID существующего вклада
     local deposit_id
     deposit_id=$(get_deposit_id "$name" "$bank")
     if [[ $? -ne 0 || -z "$deposit_id" ]]; then
@@ -364,7 +330,6 @@ add_or_update_deposit() {
     echo "Добавление/обновление вклада"
     echo "=========================================="
 
-    # Инициализируем переменные для дополнительных параметров
     local promo_rate_value=""
     local promo_end_date=""
     local capitalization=""
@@ -577,27 +542,192 @@ add_or_update_deposit() {
     fi
 }
 
-bulk_topup() {
+update_deposit_rate_interactive() {
     echo "=========================================="
-    echo "Массовое пополнение вкладов"
+    echo "Обновление ставки по вкладу"
     echo "=========================================="
 
     echo "Список ваших вкладов:"
-    deposit-manager list
+    local deposits_list
+    deposits_list=$(deposit-manager list 2>/dev/null)
 
-    echo ""
-    read -p "Введите сумму для пополнения всех вкладов: " amount
-
-    if [[ ! $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] || [[ $(echo "$amount <= 0" | bc -l) -eq 1 ]]; then
-        error "Некорректная сумма"
+    if [[ -z "$deposits_list" ]]; then
+        error "Нет доступных вкладов для обновления"
         return 1
     fi
 
-    warn "Функция массового пополнения требует доработки для парсинга списка вкладов"
-    info "Используйте 'deposit-manager list' для просмотра ID вкладов"
-    info "Затем используйте 'deposit-manager topup <id> <amount>' для каждого вклада"
-}
+    echo "$deposits_list"
+    echo ""
 
+    while true; do
+        read -p "Введите название вклада: " name
+        if [[ -n "$name" ]]; then
+            break
+        else
+            error "Название не может быть пустым"
+        fi
+    done
+
+    while true; do
+        read -p "Введите банк: " bank
+        if [[ -n "$bank" ]]; then
+            break
+        else
+            error "Банк не может быть пустым"
+        fi
+    done
+
+    log "Поиск вклада '$name' в банке '$bank'..."
+    deposit_info=$(deposit-manager find "$name" "$bank" 2>/dev/null)
+
+    if ! echo "$deposits_list" | grep -q "$name.*$bank"; then
+        error "Вклад '$name' в банке '$bank' не найден"
+        return 1
+    fi
+
+    local deposit_json
+    deposit_json=$(jq -r --arg name "$name" --arg bank "$bank" '.deposits[] | select(.name == $name and .bank == $bank)' "$DEPOSITS_FILE" 2>/dev/null)
+
+    if [[ -z "$deposit_json" || "$deposit_json" == "null" ]]; then
+        error "Не удалось получить данные вклада"
+        return 1
+    fi
+
+    local current_rate
+    current_rate=$(echo "$deposit_json" | jq -r '.interest_rate')
+    local current_promo_rate
+    current_promo_rate=$(echo "$deposit_json" | jq -r '.promo_rate // "нет"')
+    local current_promo_end_date
+    current_promo_end_date=$(echo "$deposit_json" | jq -r '.promo_end_date // "нет"')
+
+    echo ""
+    echo "Текущие данные вклада:"
+    echo "  Основная ставка: $current_rate%"
+    echo "  Промо-ставка: $current_promo_rate"
+    if [[ "$current_promo_end_date" != "нет" ]]; then
+        echo "  Дата окончания промо: $current_promo_end_date"
+    fi
+    echo ""
+
+    while true; do
+        read -p "Введите новую основную ставку (текущая: $current_rate%): " new_rate
+        if [[ -z "$new_rate" ]]; then
+            new_rate="$current_rate"
+            break
+        elif [[ $new_rate =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && (($(echo "$new_rate > 0" | bc -l))); then
+            break
+        else
+            error "Некорректная ставка. Пример: 5.5 или 10"
+        fi
+    done
+
+    echo ""
+    echo "Обновление промо-ставки:"
+    echo "1) Оставить текущую промо-ставку"
+    echo "2) Изменить промо-ставку"
+    echo "3) Удалить промо-ставку"
+
+    local promo_choice
+    while true; do
+        read -p "Ваш выбор [1-3]: " promo_choice
+        case $promo_choice in
+        1)
+            new_promo_rate="$current_promo_rate"
+            new_promo_end_date="$current_promo_end_date"
+            break
+            ;;
+        2)
+            while true; do
+                read -p "Введите новую промо-ставку: " new_promo_rate
+                if [[ $new_promo_rate =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && (($(echo "$new_promo_rate > 0" | bc -l))); then
+                    break
+                else
+                    error "Некорректная промо-ставка. Пример: 5.5 или 10"
+                fi
+            done
+
+            while true; do
+                read -p "Введите дату окончания промо-ставки (ГГГГ-ММ-ДД): " new_promo_end_date
+                if date -d "$new_promo_end_date" >/dev/null 2>&1; then
+                    break
+                else
+                    error "Некорректная дата. Используйте формат ГГГГ-ММ-ДД"
+                fi
+            done
+            break
+            ;;
+        3)
+            new_promo_rate="null"
+            new_promo_end_date="null"
+            break
+            ;;
+        *)
+            error "Введите 1, 2 или 3"
+            ;;
+        esac
+    done
+
+    echo ""
+    echo "Подтвердите изменения:"
+    echo "  Новая основная ставка: $new_rate%"
+    if [[ "$new_promo_rate" != "null" ]]; then
+        echo "  Новая промо-ставка: $new_promo_rate%"
+        echo "  Дата окончания промо: $new_promo_end_date"
+    else
+        echo "  Промо-ставка: будет удалена"
+    fi
+    echo ""
+
+    while true; do
+        read -p "Подтвердить обновление? [y/N]: " confirm
+        case $confirm in
+        [Yy]*)
+            break
+            ;;
+        [Nn]*)
+            echo "Отмена обновления"
+            return 0
+            ;;
+        *)
+            echo "Отмена обновления"
+            return 0
+            ;;
+        esac
+    done
+
+    log "Обновление ставки вклада '$name'..."
+
+    local temp_file
+    temp_file=$(mktemp)
+
+    if [[ "$new_promo_rate" == "null" ]]; then
+        jq --arg name "$name" \
+            --arg bank "$bank" \
+            --arg new_rate "$new_rate" \
+            '(.deposits[] | select(.name == $name and .bank == $bank)) |= 
+            (.interest_rate = ($new_rate | tonumber) | del(.promo_rate) | del(.promo_end_date))' \
+            "$DEPOSITS_FILE" >"$temp_file"
+    else
+        jq --arg name "$name" \
+            --arg bank "$bank" \
+            --arg new_rate "$new_rate" \
+            --arg new_promo_rate "$new_promo_rate" \
+            --arg new_promo_end_date "$new_promo_end_date" \
+            '(.deposits[] | select(.name == $name and .bank == $bank)) |= 
+            (.interest_rate = ($new_rate | tonumber) | .promo_rate = ($new_promo_rate | tonumber) | .promo_end_date = $new_promo_end_date)' \
+            "$DEPOSITS_FILE" >"$temp_file"
+    fi
+
+    if [[ $? -eq 0 ]]; then
+        mv "$temp_file" "$DEPOSITS_FILE"
+        log "Ставка по вкладу '$name' успешно обновлена"
+        echo "✅ Ставка по вкладу успешно обновлена"
+    else
+        error "Ошибка при обновлении ставки"
+        rm -f "$temp_file"
+        return 1
+    fi
+}
 accrue_interest_auto() {
     echo "=========================================="
     echo "Автоматическое начисление процентов"
@@ -627,12 +757,9 @@ main_menu() {
     echo "1) Добавить новый вклад или пополнить существующий"
     echo "2) Просмотреть список вкладов"
     echo "3) Проверить уведомления"
-    echo "4) Массовое пополнение"
-    echo "5) Рассчитать доход"
-    echo "6) Записать начисление процентов в ledger"
-    echo "7) Автоматическое начисление процентов"
-    echo "8) Показать заработанные проценты"
-    echo "9) Выход"
+    echo "4) Рассчитать доход"
+    echo "5) Обновить ставку по вкладу"
+    echo "6) Выход"
     echo ""
 }
 
@@ -647,17 +774,6 @@ show_existing_deposits() {
     else
         echo "Файл вкладов не найден: $DEPOSITS_FILE"
     fi
-}
-
-show_earned_interest() {
-    echo "=========================================="
-    echo "Заработанные проценты по вкладам"
-    echo "=========================================="
-
-    echo "Расчет заработанных процентов на текущий момент..."
-
-    deposit-manager list | grep -A 5 "Заработано на текущий момент" ||
-        info "Для просмотра заработанных процентов используйте: deposit-manager list"
 }
 
 check_dependencies() {
@@ -692,21 +808,12 @@ main() {
             deposit-manager notifications
             ;;
         4)
-            bulk_topup
-            ;;
-        5)
             calculate_income_interactive
             ;;
+        5)
+            update_deposit_rate_interactive
+            ;;
         6)
-            record_interest_interactive
-            ;;
-        7)
-            accrue_interest_auto
-            ;;
-        8)
-            show_earned_interest
-            ;;
-        9)
             echo "Выход..."
             exit 0
             ;;
@@ -752,26 +859,15 @@ case "${1:-}" in
 "calculate")
     if [[ $# -ge 3 ]]; then
         deposit-manager calculate "$2" "$3"
-    elif [[ $# -ge 2 ]]; then
-        error "Использование: $0 calculate <deposit_id> <days>"
-        exit 1
     else
         calculate_income_interactive
-    fi
-    ;;
-"interest")
-    if [[ $# -ge 4 ]]; then
-        record_interest "$2" "$3" "$4"
-    else
-        error "Использование: $0 interest <deposit_name> <amount> <days>"
-        exit 1
     fi
     ;;
 "accrue-interest")
     accrue_interest_auto
     ;;
-"earned")
-    show_earned_interest
+"update-rate")
+    update_deposit_rate_interactive
     ;;
 "ledger-path")
     echo "Файл ledger: $LEDGER_PATH"
@@ -790,9 +886,9 @@ case "${1:-}" in
     echo "  list           - Показать список вкладов"
     echo "  notifications  - Проверить уведомления"
     echo "  topup <id> <amount> - Пополнить вклад"
-    echo "  calculate <id> <days> - Рассчитать доход"
-    echo "  interest <name> <amount> <days> - Записать начисление процентов"
-    echo "  earned         - Показать заработанные проценты"
+    echo "  calculate      - Рассчитать доход (интерактивно)"
+    echo "  calculate <id> <days> - Рассчитать доход по ID"
+    echo "  update-rate    - Обновить ставку по вкладу"
     echo "  ledger-path    - Показать путь и последние записи ledger"
     echo "  help           - Показать эту справку"
     echo ""
