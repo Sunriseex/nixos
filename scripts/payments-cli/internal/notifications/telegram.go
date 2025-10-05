@@ -2,7 +2,7 @@ package notifications
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	telebot "gopkg.in/telebot.v4"
@@ -29,13 +29,14 @@ func Init() error {
 
 func SendTelegramNotification(message string) {
 	if bot == nil || config.AppConfig.TelegramUserID == 0 {
+		slog.Debug("Telegram бот не инициализирован, пропускаем отправку")
 		return
 	}
 
 	user := &telebot.User{ID: config.AppConfig.TelegramUserID}
 	_, err := bot.Send(user, message)
 	if err != nil {
-		log.Printf("Ошибка отправки в Telegram: %v", err)
+		slog.Error("Ошибка отправки в Telegram", "error", err)
 	}
 }
 

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 
@@ -16,16 +15,16 @@ import (
 
 func main() {
 	if err := config.Init(); err != nil {
-		slog.Error("Ошибка инициализации конфигурации: %v", err)
+		slog.Error("Ошибка инициализации конфигурации", "error", err)
 		os.Exit(1)
 	}
 
 	if err := initializeDataFiles(); err != nil {
-		slog.Warn("не удалось инициализировать файл данных: %v", err)
+		slog.Warn("не удалось инициализировать файл данных", "error", err)
 	}
 
 	if err := notifications.Init(); err != nil {
-		slog.Warn("ошибка инициализации Telegram: %v", err)
+		slog.Warn("ошибка инициализации Telegram", "error", err)
 	}
 
 	if len(os.Args) == 1 {
@@ -56,11 +55,13 @@ func initializeDataFiles() error {
 
 func executeDefaultCommand() {
 	if err := commands.DepositList(); err != nil {
-		log.Fatal(err)
+		slog.Error("Ошибка выполнения команды list", "error", err)
+		os.Exit(1)
 	}
 	fmt.Println()
 	if err := commands.DepositCheckNotifications(); err != nil {
-		log.Fatal(err)
+		slog.Error("Ошибка проверки уведомлений", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -99,7 +100,7 @@ func handleTopUpCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-
+	slog.Debug("Пополнение вклада", "deposit id", args[0], "amount", amount)
 	return commands.DepositTopUp(args[0], amount)
 }
 
@@ -112,7 +113,7 @@ func handleCalculateCommand(args []string) error {
 	if err != nil {
 		return err
 	}
-
+	slog.Debug("Расчет дохода", "deposit id", args[0], "days", days)
 	return commands.DepositCalculateIncome(args[0], days)
 }
 
@@ -120,7 +121,7 @@ func handleUpdateCommand(args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("использование: deposit-manager update <deposit_id>")
 	}
-
+	slog.Debug("Обновление вклада", "deposit id", args[0])
 	return commands.DepositUpdate(args[0])
 }
 
@@ -128,7 +129,7 @@ func handleFindCommand(args []string) error {
 	if len(args) < 2 {
 		return fmt.Errorf("использование: deposit-manager find <name> <bank>")
 	}
-
+	slog.Debug("Поиск вклада", "name", args[0], "bank", args[1])
 	return commands.DepositFind(args[0], args[1])
 }
 
@@ -165,6 +166,12 @@ func handleCreateCommand(args []string) error {
 	if err := validateAndParseCreateParams(&createParams, amountStr, rateStr, termStr, promoRateStr); err != nil {
 		return err
 	}
+
+	slog.Debug("Создание вклада",
+		"name", createParams.name,
+		"bank", createParams.bank,
+		"type", createParams.depositType,
+		"amount", createParams.amount)
 
 	return commands.DepositCreate(
 		createParams.name,
