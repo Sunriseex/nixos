@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ type Config struct {
 	DataPath         string
 	DepositsDataPath string
 	LedgerPath       string
+	LogLevel         slog.Level
 }
 
 var AppConfig *Config
@@ -43,7 +45,7 @@ func Init() error {
 	}
 
 	if !loaded {
-
+		return err
 	}
 
 	dataPath, err := expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json"))
@@ -61,15 +63,55 @@ func Init() error {
 		return errors.NewConfigurationError("ошибка расширения пути LEDGER_PATH", err)
 	}
 
+	logLevel := slog.LevelError
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		switch envLogLevel {
+		case "debug":
+			logLevel = slog.LevelDebug
+		case "info":
+			logLevel = slog.LevelInfo
+		case "warn":
+			logLevel = slog.LevelWarn
+		case "error":
+			logLevel = slog.LevelError
+		}
+	}
+
 	AppConfig = &Config{
 		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
 		TelegramUserID:   getEnvInt64("TELEGRAM_USER_ID", 0),
 		DataPath:         dataPath,
 		DepositsDataPath: depositsDataPath,
 		LedgerPath:       ledgerPath,
+		LogLevel:         logLevel,
 	}
 
+	initLogger(logLevel)
+
+	slog.Debug("Конфигурация инициализирована",
+		"data_path", dataPath,
+		"deposit_path", depositsDataPath,
+		"log_level", logLevel)
+
 	return nil
+}
+
+func initLogger(level slog.Level) {
+
+	opts := &slog.HandlerOptions{
+		Level: level,
+	}
+
+	var handler slog.Handler
+
+	if level == slog.LevelDebug {
+
+		handler = slog.NewTextHandler(os.Stderr, opts)
+
+	} else {
+		handler = slog.NewJSONHandler(os.Stderr, opts)
+	}
+	slog.SetDefault(slog.New(handler))
 }
 
 func expandPath(path string) (string, error) {

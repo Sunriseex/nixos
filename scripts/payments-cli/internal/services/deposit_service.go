@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/config"
@@ -41,10 +42,22 @@ type CreateDepositResponse struct {
 }
 
 func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositResponse, error) {
+
+	slog.Debug("Создание вклада",
+		"name", req.Name,
+		"bank", req.Bank,
+		"amount", req.Amount)
+
 	if err := s.validator.ValidateCreateRequest(
 		req.Name, req.Bank, req.Type, req.Amount, req.InterestRate,
 		req.TermMonths, req.PromoRate, req.PromoEndDate,
 	); err != nil {
+
+		slog.Error("Ошибка валидации вклада",
+			"name", req.Name,
+			"bank", req.Bank,
+			"error", err)
+
 		return nil, errors.NewValidationError(
 			"некорректные параметры вклада",
 			map[string]interface{}{
@@ -76,6 +89,12 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 		deposit.TermMonths = req.TermMonths
 		endDate, err := dates.CalculateMaturityDate(deposit.StartDate, req.TermMonths)
 		if err != nil {
+
+			slog.Error("Ошибка расчета даты окончания вклада",
+				"start_date", deposit.StartDate,
+				"term_months", req.TermMonths,
+				"error", err)
+
 			return nil, errors.NewCalculationError(
 				"ошибка расчета даты окончания вклада",
 				err,
@@ -86,6 +105,11 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 	}
 
 	if err := s.validator.Validate(deposit); err != nil {
+
+		slog.Error("Ошибка валидации вклада",
+			"deposit_name", deposit.Name,
+			"validation_error", err)
+
 		return nil, errors.NewValidationError(
 			"ошибка валидации данных вклада",
 			map[string]interface{}{
@@ -96,8 +120,18 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 	}
 
 	if err := storage.CreateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
+
+		slog.Error("Ошибка сохранения вклада",
+			"deposit_name", deposit.Name,
+			"error", err)
+
 		return nil, errors.NewStorageError("создание вклада", err)
 	}
+	slog.Info("Вклад успешно создан",
+		"id", deposit.ID,
+		"name", deposit.Name,
+		"bank", deposit.Bank,
+		"amount", deposit.Amount)
 
 	return &CreateDepositResponse{
 		Deposit:   deposit,
@@ -121,7 +155,17 @@ type TopUpResponse struct {
 }
 
 func (s *DepositService) TopUp(req *TopUpRequest) (*TopUpResponse, error) {
+
+	slog.Debug("Пополнение вклада",
+		"deposit_id", req.DepositID,
+		"amount", req.Amount)
+
 	if req.Amount <= 0 {
+
+		slog.Warn("Попытка пополнения неположительной суммой",
+			"deposit_id", req.DepositID,
+			"amount", req.Amount)
+
 		return nil, errors.NewValidationError(
 			"сумма пополнения должна быть положительной",
 			map[string]interface{}{
@@ -132,18 +176,28 @@ func (s *DepositService) TopUp(req *TopUpRequest) (*TopUpResponse, error) {
 	}
 
 	if req.Amount > 10000000 {
+
+		slog.Warn("Попытка пополнения слишком большой суммой",
+			"deposit_id", req.DepositID,
+			"amount", req.Amount)
+
 		return nil, errors.NewValidationError(
 			"сумма пополнения слишком большая",
 			map[string]interface{}{
-				"amount":      req.Amount,
-				"max_allowed": 10000000,
 				"deposit_id":  req.DepositID,
+				"max_allowed": 10000000,
+				"amount":      req.Amount,
 			},
 		)
 	}
 
 	deposit, err := storage.GetDepositByID(req.DepositID, config.AppConfig.DepositsDataPath)
 	if err != nil {
+
+		slog.Error("Ошибка получения вклада для пополнения",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.WrapError(
 			errors.ErrStorage,
 			"ошибка получения данных вклада",
@@ -154,12 +208,23 @@ func (s *DepositService) TopUp(req *TopUpRequest) (*TopUpResponse, error) {
 	previousAmount := deposit.Amount
 
 	if err := storage.UpdateDepositAmount(req.DepositID, req.Amount, config.AppConfig.DepositsDataPath); err != nil {
+
+		slog.Error("Ошибка пополнения вклада",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.WrapError(
 			errors.ErrStorage,
 			"ошибка пополнения вклада",
 			err,
 		)
 	}
+
+	slog.Info("Вклад успешно пополнен",
+		"deposit_id", req.DepositID,
+		"previous_amount", previousAmount,
+		"new_amount", previousAmount+req.Amount,
+		"topup_amount", req.Amount)
 
 	return &TopUpResponse{
 		Success:        true,
@@ -187,6 +252,11 @@ type CalculateIncomeResponse struct {
 
 func (s *DepositService) CalculateIncome(req *CalculateIncomeRequest) (*CalculateIncomeResponse, error) {
 	if req.Days <= 0 {
+
+		slog.Warn("Попытка расчета дохода неположительной даты",
+			"deposit_id", req.DepositID,
+			"days", req.Days)
+
 		return nil, errors.NewValidationError(
 			"период расчета должен быть положительным",
 			map[string]interface{}{
@@ -197,6 +267,11 @@ func (s *DepositService) CalculateIncome(req *CalculateIncomeRequest) (*Calculat
 
 	deposit, err := storage.GetDepositByID(req.DepositID, config.AppConfig.DepositsDataPath)
 	if err != nil {
+
+		slog.Error("Ошибка получения данных о вкладе по ID",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.WrapError(
 			errors.ErrStorage,
 			"ошибка получения данных вклада для расчета",
@@ -234,12 +309,24 @@ type UpdateDepositResponse struct {
 }
 
 func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositResponse, error) {
+	slog.Info("Обновление вклада", "deposit_id", req.DepositID)
+
 	deposit, err := storage.GetDepositByID(req.DepositID, config.AppConfig.DepositsDataPath)
 	if err != nil {
+
+		slog.Error("Вклад не найден для обновления",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.NewNotFoundError("вклад", req.DepositID)
 	}
 
 	if deposit.Type != "term" {
+
+		slog.Warn("Попытка обновления не срочного вклада",
+			"deposit_id", req.DepositID,
+			"deposit_type", deposit.Type)
+
 		return nil, errors.NewBusinessLogicError(
 			"только срочные вклады могут быть обновлены (пролонгированы)",
 			map[string]interface{}{
@@ -250,6 +337,11 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 	}
 
 	if !dates.CanBeProlonged(deposit.EndDate) {
+
+		slog.Warn("Вклад не может быть пролонгирован",
+			"deposit_id", req.DepositID,
+			"end_date", deposit.EndDate)
+
 		return nil, errors.NewBusinessLogicError(
 			"вклад не может быть пролонгирован в данный момент",
 			map[string]interface{}{
@@ -264,6 +356,11 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 
 	endDate, err := dates.CalculateMaturityDate(today, deposit.TermMonths)
 	if err != nil {
+
+		slog.Error("Ошибка расчета даты окончания вклада",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.NewCalculationError(
 			"ошибка расчета даты окончания при обновлении вклада",
 			err,
@@ -273,6 +370,11 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 	deposit.TopUpEndDate = dates.CalculateTopUpEndDate(today)
 
 	if err := s.validator.Validate(deposit); err != nil {
+
+		slog.Error("Ошибка валидации данных после обновления",
+			"deposit_name", deposit.Name,
+			"validate_error", err)
+
 		return nil, errors.NewValidationError(
 			"ошибка валидации данных после обновления",
 			map[string]interface{}{
@@ -283,8 +385,19 @@ func (s *DepositService) Update(req *UpdateDepositRequest) (*UpdateDepositRespon
 	}
 
 	if err := storage.UpdateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
+
+		slog.Error("Ошибка обновления вклада",
+			"deposit_id", req.DepositID,
+			"error", err)
+
 		return nil, errors.NewStorageError("обновление вклада", err)
 	}
+
+	slog.Info("Вклад успешно обновлен",
+		"deposit_id", req.DepositID,
+		"deposit_name", deposit.Name,
+		"new_start_date", deposit.StartDate,
+		"new_end_date", deposit.EndDate)
 
 	return &UpdateDepositResponse{
 		Success:      true,
@@ -305,8 +418,12 @@ type ListDepositsResponse struct {
 }
 
 func (s *DepositService) List() (*ListDepositsResponse, error) {
+
+	slog.Debug("Загрузка списка вкладов")
+
 	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
 	if err != nil {
+		slog.Error("Ошибка загрузки списка вкладов", "error", err)
 		return nil, errors.NewStorageError("загрузка списка вкладов", err)
 	}
 
@@ -314,6 +431,10 @@ func (s *DepositService) List() (*ListDepositsResponse, error) {
 	for _, deposit := range data.Deposits {
 		totalAmount += deposit.Amount
 	}
+
+	slog.Info("Список вкладов загружен",
+		"count", len(data.Deposits),
+		"total_amount", totalAmount)
 
 	return &ListDepositsResponse{
 		Success:     true,
@@ -335,10 +456,18 @@ type GetDepositResponse struct {
 }
 
 func (s *DepositService) Get(req *GetDepositRequest) (*GetDepositResponse, error) {
+
+	slog.Debug("Получение вклада по ID", "deposit_id", req.DepositID)
+
 	deposit, err := storage.GetDepositByID(req.DepositID, config.AppConfig.DepositsDataPath)
 	if err != nil {
+		slog.Error("Вклад не найден", "deposit_id", req.DepositID, "error", err)
 		return nil, errors.NewNotFoundError("вклад", req.DepositID)
 	}
+
+	slog.Info("Вклад найден",
+		"deposit_id", req.DepositID,
+		"deposit_name", deposit.Name)
 
 	return &GetDepositResponse{
 		Success: true,
@@ -360,12 +489,24 @@ type FindDepositResponse struct {
 }
 
 func (s *DepositService) Find(req *FindDepositRequest) (*FindDepositResponse, error) {
+
+	slog.Debug("Поиск вклада по имени и банку",
+		"name", req.Name,
+		"bank", req.Bank)
+
 	deposit, err := storage.FindDepositByNameAndBank(req.Name, req.Bank, config.AppConfig.DepositsDataPath)
 	if err != nil {
+
+		slog.Error("Ошибка поиска вклада",
+			"name", req.Name,
+			"bank", req.Bank,
+			"error", err)
+
 		return nil, errors.NewStorageError("поиск вклада", err)
 	}
 
 	if deposit == nil {
+		slog.Debug("Вклад не найден", "name", req.Name, "bank", req.Bank)
 		return &FindDepositResponse{
 			Success: true,
 			Deposit: nil,
@@ -373,6 +514,11 @@ func (s *DepositService) Find(req *FindDepositRequest) (*FindDepositResponse, er
 			Message: "Вклад не найден",
 		}, nil
 	}
+
+	slog.Debug("Вклад найден",
+		"name", req.Name,
+		"bank", req.Bank,
+		"deposit_id", deposit.ID)
 
 	return &FindDepositResponse{
 		Success: true,

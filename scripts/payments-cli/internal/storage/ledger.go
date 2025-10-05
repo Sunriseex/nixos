@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,19 +12,31 @@ import (
 )
 
 func RecordPaymentToLedger(payment models.Payment, ledgerPath string) error {
+
+	slog.Debug("Запись платежа в ledger",
+		"payment_name", payment.Name,
+		"amount", payment.Amount,
+		"ledger_path", ledgerPath)
+
 	expandedPath := ExpandPath(ledgerPath)
 	dir := filepath.Dir(expandedPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
+		slog.Error("Ошибка создания директории для ledger", "path", dir, "error", err)
 		return err
 	}
 	file, err := os.OpenFile(expandedPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		slog.Error("Ошибка открытия файла ledger", "path", expandedPath, "error", err)
 		return err
 	}
 	defer file.Close()
+
 	today := time.Now().Format("2006/01/02")
+
 	amount := fmt.Sprintf("₽%.2f", float64(payment.Amount)/100.0)
+
 	expenseAccount := "e:Subcriptions"
+
 	if payment.Category != "" {
 		expenseAccount = "e:" + payment.Category
 	}
@@ -35,18 +48,36 @@ func RecordPaymentToLedger(payment models.Payment, ledgerPath string) error {
 		today, payment.Name, expenseAccount, amount, paymentAccount,
 	)
 	_, err = file.WriteString(entry)
-	return err
+	if err != nil {
+		slog.Error("Ошибка записи в ledger", "path", expandedPath, "error", err)
+		return err
+	}
+
+	slog.Info("Платеж записан в ledger",
+		"payment_name", payment.Name,
+		"amount", payment.Amount)
+
+	return nil
 }
 
 func RecordDepositToLedger(deposit models.Deposit, operationType string, amount int, description string, ledgerPath string) error {
+
+	slog.Debug("Запись операции по вкладу в ledger",
+		"deposit_name", deposit.Name,
+		"operation_type", operationType,
+		"amount", amount,
+		"ledger_path", ledgerPath)
+
 	expandedPath := ExpandPath(ledgerPath)
 	dir := filepath.Dir(expandedPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
+		slog.Error("Ошибка создания директории для ledger", "path", dir, "error", err)
 		return err
 	}
 
 	file, err := os.OpenFile(expandedPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		slog.Error("Ошибка открытия файла ledger", "path", expandedPath, "error", err)
 		return err
 	}
 	defer file.Close()
@@ -87,6 +118,16 @@ func RecordDepositToLedger(deposit models.Deposit, operationType string, amount 
 	)
 
 	_, err = file.WriteString(entry)
+	if err != nil {
+		slog.Error("Ошибка записи в ledger", "path", expandedPath, "error", err)
+		return err
+	}
+
+	slog.Info("Операция по вкладу записана в ledger",
+		"deposit_name", deposit.Name,
+		"operation_type", operationType,
+		"amount", amount)
+
 	return err
 }
 

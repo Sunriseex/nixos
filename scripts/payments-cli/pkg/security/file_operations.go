@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -19,10 +18,6 @@ func AtomicWriteJSON(data interface{}, path string) error {
 	_, err, _ := fileGroup.Do(path, func() (interface{}, error) {
 		return nil, atomicWrite(data, path)
 	})
-
-	if err != nil {
-		log.Printf("[DEBUG] AtomicWriteJSON: ошибка - %v", err)
-	}
 
 	return err
 }
