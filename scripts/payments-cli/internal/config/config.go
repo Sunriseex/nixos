@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ type Config struct {
 	DataPath         string
 	DepositsDataPath string
 	LedgerPath       string
+	LogLevel         slog.Level
 }
 
 var AppConfig *Config
@@ -43,7 +45,7 @@ func Init() error {
 	}
 
 	if !loaded {
-
+		return err
 	}
 
 	dataPath, err := expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json"))
@@ -69,7 +71,30 @@ func Init() error {
 		LedgerPath:       ledgerPath,
 	}
 
+	logLevel := slog.LevelError
+	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
+		switch envLogLevel {
+		case "debug":
+			logLevel = slog.LevelDebug
+		case "info":
+			logLevel = slog.LevelInfo
+		case "warn":
+			logLevel = slog.LevelWarn
+		case "error":
+			logLevel = slog.LevelError
+		}
+	}
+	AppConfig.LogLevel = logLevel
+	initLogger(logLevel)
+
 	return nil
+}
+
+func initLogger(level slog.Level) {
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: level,
+	})
+	slog.SetDefault(slog.New(handler))
 }
 
 func expandPath(path string) (string, error) {

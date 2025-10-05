@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/sunriseex/payments-cli/internal/commands"
@@ -15,15 +16,16 @@ import (
 
 func main() {
 	if err := config.Init(); err != nil {
-		log.Fatalf("Ошибка инициализации конфигурации: %v", err)
+		slog.Error("Ошибка инициализации конфигурации: %v", err)
+		os.Exit(1)
 	}
 
 	if err := initializeDataFiles(); err != nil {
-		fmt.Printf("Предупреждение: не удалось инициализировать файл данных: %v", err)
+		slog.Warn("не удалось инициализировать файл данных: %v", err)
 	}
 
 	if err := notifications.Init(); err != nil {
-		log.Printf("Предупреждение: ошибка инициализации Telegram: %v", err)
+		slog.Warn("ошибка инициализации Telegram: %v", err)
 	}
 
 	if len(os.Args) == 1 {
@@ -33,10 +35,10 @@ func main() {
 
 	if err := executeCommand(os.Args[1], os.Args[2:]); err != nil {
 		userMsg := errors.GetUserFriendlyMessage(err)
-		log.Printf("Ошибка: %s", userMsg)
-		if appErr, ok := err.(*errors.AppError); ok && appErr.Original != nil {
-			log.Printf("Детали: %s", appErr.Original)
-		}
+		slog.Error("Ошибка выполнения команды",
+			"command", os.Args[1],
+			"error", userMsg,
+			"details", err)
 
 		os.Exit(1)
 	}

@@ -11,31 +11,6 @@ import (
 	"github.com/sunriseex/payments-cli/pkg/security"
 )
 
-func LoadDeposits(dataPath string) (*models.DepositsData, error) {
-	expandedPath := ExpandPath(dataPath)
-	var data models.DepositsData
-
-	if err := security.SafeReadJSON(expandedPath, &data); err != nil {
-		return nil, errors.NewStorageError("чтение файла вкладов", err)
-	}
-
-	if data.Deposits == nil {
-		data.Deposits = []models.Deposit{}
-	}
-
-	return &data, nil
-}
-
-func SaveDeposit(data models.DepositsData, dataPath string) error {
-	expandedPath := ExpandPath(dataPath)
-
-	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
-		return errors.NewStorageError("сохранение вкладов", err)
-	}
-
-	return nil
-}
-
 func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 
 	data, err := LoadDeposits(dataPath)
@@ -77,6 +52,31 @@ func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 
 	if err := SaveDeposit(*data, dataPath); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func LoadDeposits(dataPath string) (*models.DepositsData, error) {
+	expandedPath := ExpandPath(dataPath)
+	var data models.DepositsData
+
+	if err := security.SafeReadJSON(expandedPath, &data); err != nil {
+		return nil, errors.NewStorageError("чтение файла вкладов", err)
+	}
+
+	if data.Deposits == nil {
+		data.Deposits = []models.Deposit{}
+	}
+
+	return &data, nil
+}
+
+func SaveDeposit(data models.DepositsData, dataPath string) error {
+	expandedPath := ExpandPath(dataPath)
+
+	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
+		return errors.NewStorageError("сохранение вкладов", err)
 	}
 
 	return nil

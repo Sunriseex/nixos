@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/config"
@@ -41,10 +42,13 @@ type CreateDepositResponse struct {
 }
 
 func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositResponse, error) {
+
+	slog.Debug("Создание вклада", "name", req.Name, "bank", req.Bank, "amount", req.Amount)
 	if err := s.validator.ValidateCreateRequest(
 		req.Name, req.Bank, req.Type, req.Amount, req.InterestRate,
 		req.TermMonths, req.PromoRate, req.PromoEndDate,
 	); err != nil {
+		slog.Error("Ошибка валидации вклада", "error", err, "name", req.Name)
 		return nil, errors.NewValidationError(
 			"некорректные параметры вклада",
 			map[string]interface{}{
@@ -76,6 +80,7 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 		deposit.TermMonths = req.TermMonths
 		endDate, err := dates.CalculateMaturityDate(deposit.StartDate, req.TermMonths)
 		if err != nil {
+			slog.Error("Ошибка расчета даты", "error", err, "name", req.Name)
 			return nil, errors.NewCalculationError(
 				"ошибка расчета даты окончания вклада",
 				err,
@@ -98,7 +103,7 @@ func (s *DepositService) Create(req *CreateDepositRequest) (*CreateDepositRespon
 	if err := storage.CreateDeposit(deposit, config.AppConfig.DepositsDataPath); err != nil {
 		return nil, errors.NewStorageError("создание вклада", err)
 	}
-
+	slog.Info("Вклад успешно создан", "id", deposit.ID, "name", deposit.Name)
 	return &CreateDepositResponse{
 		Deposit:   deposit,
 		DepositID: deposit.ID,
