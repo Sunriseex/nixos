@@ -40,3 +40,25 @@ func SavePayments(data *models.PaymentData, dataPath string) error {
 	}
 	return nil
 }
+
+func InitializeDepositsFile(dataPath string) error {
+	expandedPath := ExpandPath(dataPath)
+	if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+		initialData := &models.DepositsData{
+			Deposits: []models.Deposit{},
+		}
+		return security.AtomicWriteJSON(initialData, expandedPath)
+	}
+	return nil
+}
+
+func InitializePaymentFile(dataPath string) error {
+	expandedPath := ExpandPath(dataPath)
+	if _, err := os.Stat(expandedPath); os.IsNotExist(err) {
+		initialData := &models.PaymentData{
+			Payments: []models.Payment{},
+		}
+		return security.AtomicWriteJSON(initialData, expandedPath)
+	}
+	return nil
+}

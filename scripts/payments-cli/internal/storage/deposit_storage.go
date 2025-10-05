@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -27,20 +28,29 @@ func LoadDeposits(dataPath string) (*models.DepositsData, error) {
 
 func SaveDeposit(data models.DepositsData, dataPath string) error {
 	expandedPath := ExpandPath(dataPath)
+
 	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
 		return errors.NewStorageError("сохранение вкладов", err)
 	}
+
 	return nil
 }
 
 func CreateDeposit(deposit *models.Deposit, dataPath string) error {
+
 	data, err := LoadDeposits(dataPath)
 	if err != nil {
-		return errors.WrapError(
-			errors.ErrStorage,
-			"ошибка загрузки вкладов при создании",
-			err,
-		)
+		if os.IsNotExist(err) {
+			data = &models.DepositsData{
+				Deposits: []models.Deposit{},
+			}
+		} else {
+			return errors.WrapError(
+				errors.ErrStorage,
+				"ошибка загрузки вкладов при создании",
+				err,
+			)
+		}
 	}
 
 	now := time.Now()
@@ -64,7 +74,12 @@ func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 	}
 
 	data.Deposits = append(data.Deposits, *deposit)
-	return SaveDeposit(*data, dataPath)
+
+	if err := SaveDeposit(*data, dataPath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func UpdateDepositAmount(depositID string, amount int, dataPath string) error {

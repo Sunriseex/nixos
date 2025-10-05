@@ -9,12 +9,17 @@ import (
 	"github.com/sunriseex/payments-cli/internal/commands"
 	"github.com/sunriseex/payments-cli/internal/config"
 	"github.com/sunriseex/payments-cli/internal/notifications"
+	"github.com/sunriseex/payments-cli/internal/storage"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 )
 
 func main() {
 	if err := config.Init(); err != nil {
 		log.Fatalf("Ошибка инициализации конфигурации: %v", err)
+	}
+
+	if err := initializeDataFiles(); err != nil {
+		fmt.Printf("Предупреждение: не удалось инициализировать файл данных: %v", err)
 	}
 
 	if err := notifications.Init(); err != nil {
@@ -29,8 +34,22 @@ func main() {
 	if err := executeCommand(os.Args[1], os.Args[2:]); err != nil {
 		userMsg := errors.GetUserFriendlyMessage(err)
 		log.Printf("Ошибка: %s", userMsg)
+		if appErr, ok := err.(*errors.AppError); ok && appErr.Original != nil {
+			log.Printf("Детали: %s", appErr.Original)
+		}
+
 		os.Exit(1)
 	}
+}
+
+func initializeDataFiles() error {
+	if err := storage.InitializeDepositsFile(config.AppConfig.DepositsDataPath); err != nil {
+		return fmt.Errorf("инициализация файла вкладов: %w", err)
+	}
+	if err := storage.InitializePaymentFile(config.AppConfig.DataPath); err != nil {
+		return fmt.Errorf("инициализация файла платежей: %w", err)
+	}
+	return nil
 }
 
 func executeDefaultCommand() {

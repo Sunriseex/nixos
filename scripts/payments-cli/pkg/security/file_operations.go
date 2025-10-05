@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -14,21 +15,29 @@ import (
 var fileGroup singleflight.Group
 
 func AtomicWriteJSON(data interface{}, path string) error {
+
 	_, err, _ := fileGroup.Do(path, func() (interface{}, error) {
 		return nil, atomicWrite(data, path)
 	})
+
+	if err != nil {
+		log.Printf("[DEBUG] AtomicWriteJSON: ошибка - %v", err)
+	}
+
 	return err
 }
 
 func atomicWrite(data interface{}, path string) error {
-	tempPath := path + ".tmp." + generateRandomSuffix()
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+
+	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create directory: %v", err)
 	}
 
-	file, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	tempPath := path + ".tmp." + generateRandomSuffix()
+
+	file, err := os.OpenFile(tempPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("create temp file: %v", err)
 	}
@@ -43,7 +52,10 @@ func atomicWrite(data interface{}, path string) error {
 	if err := file.Sync(); err != nil {
 		return fmt.Errorf("sync file: %v", err)
 	}
-	file.Close()
+
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close file: %v", err)
+	}
 
 	if err := os.Rename(tempPath, path); err != nil {
 		return fmt.Errorf("atomic rename: %v", err)
@@ -59,12 +71,18 @@ func generateRandomSuffix() string {
 }
 
 func SafeReadJSON(path string, target interface{}) error {
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return initializeEmptyFile(path, target)
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return fmt.Errorf("read file: %v", err)
+	}
+
+	if len(data) == 0 {
+		return initializeEmptyFile(path, target)
 	}
 
 	if err := json.Unmarshal(data, target); err != nil {
@@ -72,4 +90,12 @@ func SafeReadJSON(path string, target interface{}) error {
 	}
 
 	return nil
+}
+
+func initializeEmptyFile(path string, target interface{}) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	return AtomicWriteJSON(target, path)
 }
