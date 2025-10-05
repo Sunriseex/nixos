@@ -7,3 +7,5 @@ require (
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
 	gopkg.in/telebot.v4 v4.0.0-beta.5
 )
+
+require github.com/google/uuid v1.6.0
