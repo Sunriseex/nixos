@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,25 +20,36 @@ func ExpandPath(path string) string {
 }
 
 func LoadPayments(dataPath string) (*models.PaymentData, error) {
+
+	slog.Debug("Загрузка платежей из файла", "path", dataPath)
+
 	expandedPath := ExpandPath(dataPath)
 	var data models.PaymentData
 
 	if err := security.SafeReadJSON(expandedPath, &data); err != nil {
+		slog.Error("Ошибка чтения файла платежей", "path", expandedPath, "error", err)
 		return nil, errors.NewStorageError("чтение файла платежей", err)
 	}
 
 	if data.Payments == nil {
 		data.Payments = []models.Payment{}
 	}
-
+	slog.Debug("Платежи загружены", "count", len(data.Payments))
 	return &data, nil
 }
 
 func SavePayments(data *models.PaymentData, dataPath string) error {
+
+	slog.Debug("Сохранение платежей", "count", len(data.Payments), "path", dataPath)
+
 	expandedPath := ExpandPath(dataPath)
 	if err := security.AtomicWriteJSON(data, expandedPath); err != nil {
+		slog.Error("Ошибка сохранения платежей", "path", expandedPath, "error", err)
 		return errors.NewStorageError("сохранение платежей", err)
 	}
+
+	slog.Debug("Платежи успешно сохранены", "count", len(data.Payments))
+
 	return nil
 }
 

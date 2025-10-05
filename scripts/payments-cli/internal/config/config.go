@@ -63,14 +63,6 @@ func Init() error {
 		return errors.NewConfigurationError("ошибка расширения пути LEDGER_PATH", err)
 	}
 
-	AppConfig = &Config{
-		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
-		TelegramUserID:   getEnvInt64("TELEGRAM_USER_ID", 0),
-		DataPath:         dataPath,
-		DepositsDataPath: depositsDataPath,
-		LedgerPath:       ledgerPath,
-	}
-
 	logLevel := slog.LevelError
 	if envLogLevel := os.Getenv("LOG_LEVEL"); envLogLevel != "" {
 		switch envLogLevel {
@@ -84,16 +76,41 @@ func Init() error {
 			logLevel = slog.LevelError
 		}
 	}
-	AppConfig.LogLevel = logLevel
+
+	AppConfig = &Config{
+		TelegramToken:    getEnv("TELEGRAM_BOT_TOKEN", ""),
+		TelegramUserID:   getEnvInt64("TELEGRAM_USER_ID", 0),
+		DataPath:         dataPath,
+		DepositsDataPath: depositsDataPath,
+		LedgerPath:       ledgerPath,
+		LogLevel:         logLevel,
+	}
+
 	initLogger(logLevel)
+
+	slog.Debug("Конфигурация инициализирована",
+		"data_path", dataPath,
+		"deposit_path", depositsDataPath,
+		"log_level", logLevel)
 
 	return nil
 }
 
 func initLogger(level slog.Level) {
-	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+
+	opts := &slog.HandlerOptions{
 		Level: level,
-	})
+	}
+
+	var handler slog.Handler
+
+	if level == slog.LevelDebug {
+
+		handler = slog.NewTextHandler(os.Stderr, opts)
+
+	} else {
+		handler = slog.NewJSONHandler(os.Stderr, opts)
+	}
 	slog.SetDefault(slog.New(handler))
 }
 

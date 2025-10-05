@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/sunriseex/payments-cli/internal/config"
@@ -39,10 +40,18 @@ type AccrueInterestResponse struct {
 }
 
 func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInterestResponse, error) {
+
+	slog.Info("Начало начисления процентов по вкладам")
+
 	data, err := storage.LoadDeposits(config.AppConfig.DepositsDataPath)
 	if err != nil {
+
+		slog.Error("Ошибка загрузки вкладов для зачисления процентов", "error", err)
+
 		return nil, errors.NewStorageError("загрузка вкладов для начисления процентов", err)
 	}
+
+	slog.Debug("Загружено вкладов для зачисления", "count", len(data.Deposits))
 
 	response := &AccrueInterestResponse{
 		Results: make([]AccrualResult, 0),
@@ -55,16 +64,28 @@ func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInt
 		if result.Success {
 			response.TotalAccrued += result.Income
 			response.SuccessCount++
+			slog.Debug("Проценты начислены успешно",
+				"deposit", deposit.Name,
+				"income", result.Income)
 		} else {
 			response.ErrorCount++
+			slog.Warn("Ошибка начисления процентов",
+				"deposit", deposit.Name,
+				"error", result.Error)
 		}
 	}
 
 	response.Success = response.ErrorCount == 0
 	if response.SuccessCount > 0 {
 		response.Message = fmt.Sprintf("Начислено процентов: %.2f руб. по %d вкладам", response.TotalAccrued, response.SuccessCount)
+
+		slog.Info("Начисление процентов завершено успешно",
+			"total_accrued", response.TotalAccrued,
+			"success_count", response.SuccessCount)
+
 	} else {
 		response.Message = "Не найдено вкладов для начисления процентов"
+		slog.Info("Не найдено вкладов для зачисления процентов")
 	}
 
 	return response, nil
