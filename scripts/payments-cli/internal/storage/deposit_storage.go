@@ -1,16 +1,20 @@
 package storage
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/sunriseex/payments-cli/internal/models"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 	"github.com/sunriseex/payments-cli/pkg/security"
 )
+
+func generateDepositID() string {
+	return uuid.New().String()
+}
 
 func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 
@@ -36,7 +40,7 @@ func CreateDeposit(deposit *models.Deposit, dataPath string) error {
 	deposit.UpdatedAt = now
 
 	if deposit.ID == "" {
-		deposit.ID = generateDepositID(deposit.Name)
+		deposit.ID = generateDepositID()
 	}
 
 	for _, existingDeposit := range data.Deposits {
@@ -242,9 +246,4 @@ func FindDepositByNameAndBank(name, bank string, dataPath string) (*models.Depos
 	}
 	slog.Debug("Вклад не найден по имени и банку", "name", name, "bank", bank)
 	return nil, nil
-}
-
-func generateDepositID(name string) string {
-	base := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	return fmt.Sprintf("%s-%d", base, time.Now().Unix())
 }
