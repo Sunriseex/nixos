@@ -30,3 +30,29 @@ func AddDays(dateStr string, months int) (string, error) {
 	}
 	return FormatDate(date.AddDate(0, months, 0)), nil
 }
+
+func AddMonths(dateStr string, months int) (string, error) {
+	date, err := ParseDate(dateStr)
+	if err != nil {
+		return "", err
+	}
+	return FormatDate(date.AddDate(0, months, 0)), nil
+}
+func AddYears(dateStr string, years int) (string, error) {
+	date, err := ParseDate(dateStr)
+	if err != nil {
+		return "", err
+	}
+	return FormatDate(date.AddDate(years, 0, 0)), nil
+}
+func DaysBetween(dateStr1, dateStr2 string) int {
+	date1, err1 := time.Parse("2006-01-02", dateStr1)
+	date2, err2 := time.Parse("2006-01-02", dateStr2)
+	if err1 != nil || err2 != nil {
+		return 0
+	}
+	date1 = time.Date(date1.Year(), date1.Month(), date1.Day(), 0, 0, 0, 0, time.UTC)
+	date2 = time.Date(date2.Year(), date2.Month(), date2.Day(), 0, 0, 0, 0, time.UTC)
+	hours := date2.Sub(date1).Hours()
+	return int(hours / 24)
+}

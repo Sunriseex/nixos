@@ -118,6 +118,8 @@ func MarkPaid() error {
 			found = true
 			fmt.Printf("  Найден платеж для обновления: %s\n", data.Payments[i].Name)
 
+			oldDueDate := data.Payments[i].DueDate
+
 			if payment.Type == "one-time" {
 				data.Payments[i].PaymentDate = today
 				fmt.Printf("  ✅ Разовый платеж '%s' помечен как оплаченный\n", payment.Name)
@@ -131,8 +133,15 @@ func MarkPaid() error {
 					intervalInfo = fmt.Sprintf(" (интервал %d дней)", payment.DaysInterval)
 				}
 
-				fmt.Printf("  ✅ Повторяющийся платеж '%s' обновлен. Следующий платеж: %s%s\n",
-					payment.Name, newDueDate, intervalInfo)
+				oldDueParsed, _ := time.Parse("2006-01-02", oldDueDate)
+				newDueParsed, _ := time.Parse("2006-01-02", newDueDate)
+				daysAdded := int(newDueParsed.Sub(oldDueParsed).Hours() / 24)
+
+				fmt.Printf("  ✅ Повторяющийся платеж '%s' обновлен.\n",
+					payment.Name)
+				fmt.Printf("Старая дата: %s\n", oldDueDate)
+				fmt.Printf("Новая дата: %s\n", newDueDate)
+				fmt.Printf("Добавлено дней: %d%s\n", daysAdded, intervalInfo)
 			}
 			break
 		}
@@ -152,7 +161,22 @@ func MarkPaid() error {
 	return nil
 }
 func extendPaymentDate(payment models.Payment) string {
-	baseDate := time.Now()
+	var baseDate time.Time
+
+	if payment.DueDate != "" {
+		due, err := time.Parse("2006-01-02", payment.PaymentDate)
+		if err == nil {
+			if due.After(time.Now()) {
+				baseDate = due
+			} else {
+				baseDate = time.Now()
+			}
+		} else {
+			baseDate = time.Now()
+		}
+	} else {
+		baseDate = time.Now()
+	}
 
 	if payment.Type == "one-time" {
 		return baseDate.Format("2006-01-02")
