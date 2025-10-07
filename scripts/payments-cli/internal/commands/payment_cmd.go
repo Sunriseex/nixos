@@ -105,7 +105,9 @@ func DisplayWidget() {
 	fmt.Printf("%s %s %s₽ · %dд%s\n", icon, name, amount, days, intervalInfo)
 }
 func MarkPaid() error {
+
 	data, err := storage.LoadPayments(config.AppConfig.DataPath)
+
 	if err != nil {
 		slog.Error("Ошибка загрузки данных платежей", "error", err)
 		return fmt.Errorf("ошибка загрузки данных: %v", err)
@@ -204,7 +206,7 @@ func extendPaymentDate(payment models.Payment) string {
 	var baseDate time.Time
 
 	if payment.DueDate != "" {
-		due, err := time.Parse("2006-01-02", payment.PaymentDate)
+		due, err := time.Parse("2006-01-02", payment.DueDate)
 		if err == nil {
 			if due.After(time.Now()) {
 				baseDate = due
@@ -235,6 +237,7 @@ func extendPaymentDate(payment models.Payment) string {
 			"payment", payment.Name,
 			"interval_days", payment.DaysInterval,
 			"new_date", newDate)
+
 		return newDate
 	}
 	switch payment.Type {
