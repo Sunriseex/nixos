@@ -18,11 +18,17 @@ type UserState struct {
 type StateType string
 
 const (
-	StateNone             StateType = "none"
-	StateAddingPayment    StateType = "adding_payment"
-	StateAddingDeposit    StateType = "adding_deposit"
-	StateWaitingForAmount StateType = "waiting_for_amount"
-	StateWaitingForDate   StateType = "waiting_for_date"
+	StateNone                  StateType = "none"
+	StateAddingPaymentName     StateType = "adding_payment_name"
+	StateAddingPaymentAmount   StateType = "adding_payment_amount"
+	StateAddingPaymentDate     StateType = "adding_payment_date"
+	StateAddingPaymentType     StateType = "adding_payment_type"
+	StateAddingPaymentCategory StateType = "adding_payment_category"
+	StateAddingPaymentConfirm  StateType = "adding_payment_confirm"
+
+	StateAddingDepositName   StateType = "adding_deposit_name"
+	StateAddingDepositAmount StateType = "adding_deposit_amount"
+	StateAddingDepositDate   StateType = "adding_deposit_Date"
 )
 
 func NewStateManager() *StateManager {

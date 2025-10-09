@@ -20,6 +20,13 @@ func MainMenu() *tele.ReplyMarkup {
 	return menu
 }
 
+func CancelMenu() *tele.ReplyMarkup {
+	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
+	btnCancel := menu.Text("❌ Отмена")
+	menu.Reply(menu.Row(btnCancel))
+	return menu
+}
+
 func PaymentsMenu() *tele.ReplyMarkup {
 	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
 
@@ -55,11 +62,11 @@ func DepositsMenu() *tele.ReplyMarkup {
 
 func BackToMainMenu() *tele.ReplyMarkup {
 	menu := &tele.ReplyMarkup{ResizeKeyboard: true}
-
 	btnMainMenu := menu.Text("🏠 Главное меню")
+	btnCancel := menu.Text("❌ Отмена")
 
 	menu.Reply(
-		menu.Row(btnMainMenu),
+		menu.Row(btnMainMenu, btnCancel),
 	)
 	return menu
 }
