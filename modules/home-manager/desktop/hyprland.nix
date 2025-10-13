@@ -60,7 +60,7 @@
         "v2rayN"
         "Telegram"
         "KeePassXC"
-        "spotify"
+        "yandex-music"
       ];
 
       ### ENVIRONMENT VARIABLES

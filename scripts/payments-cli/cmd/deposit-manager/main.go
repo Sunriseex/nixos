@@ -5,15 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sunriseex/payments-cli/internal/commands"
 	"github.com/sunriseex/payments-cli/internal/config"
 	"github.com/sunriseex/payments-cli/internal/notifications"
-	"github.com/sunriseex/payments-cli/internal/services"
 	"github.com/sunriseex/payments-cli/internal/storage"
-	"github.com/sunriseex/payments-cli/internal/telegram"
 	"github.com/sunriseex/payments-cli/pkg/errors"
 )
 
@@ -35,52 +31,7 @@ func main() {
 		executeCommandWithArgs()
 		return
 	}
-	runBotMode()
 
-}
-
-func runBotMode() {
-	slog.Info("Запуск в режиме Telegram бота")
-
-	var tgBot *telegram.Bot
-	if config.AppConfig.TelegramToken != "" {
-		services := &telegram.Services{
-			Deposits: services.NewDepositService(),
-			Payments: services.NewPaymentService(),
-			Interest: services.NewInterestService(),
-		}
-
-		var err error
-		tgBot, err = telegram.NewBot(services)
-		if err != nil {
-			slog.Error("Ошибка инициализации Telegram бота", "error", err)
-			os.Exit(1)
-		}
-
-		if err := tgBot.Start(); err != nil {
-			slog.Error("Ошибка запуска Telegram бота", "error", err)
-			os.Exit(1)
-		}
-
-		slog.Info("✅ Telegram бот успешно запущен и ожидает сообщений")
-		defer tgBot.Stop()
-	} else {
-		slog.Warn("Telegram токен не настроен, бот не будет запущен")
-		slog.Info("Запуск в режиме CLI")
-		executeDefaultCommand()
-		return
-	}
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
-	slog.Info("Бот работает. Нажмите Ctrl+C для остановки")
-
-	for {
-		sig := <-sigChan
-		slog.Info("Получен сигнал завершения", "signal", sig)
-		return
-	}
 }
 
 func executeCommandWithArgs() {
