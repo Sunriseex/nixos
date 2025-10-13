@@ -1,89 +1,144 @@
 { pkgs, ... }:
 let
-  payments-cli = pkgs.callPackage ../../../scripts/payments-cli/default.nix { };
+  finance-manager = pkgs.callPackage ../../../scripts/finance-manager/default.nix { };
 in
 {
-  home.file.".local/bin/add-payment" = {
+  home.file.".config/waybar/scripts/wave-plates.sh" = {
     executable = true;
     text = ''
-      #!/bin/sh
-      echo "Добавление нового платежа"
-      echo "========================"
+      #!/usr/bin/env bash
+      # wave-plates.sh — fixed-start + persistent base + sync command
+      STATE_FILE="/tmp/wave_plates_state.json"
+      SYNC_LOCK_FILE="/tmp/wave_plates_sync.lock"
 
-      read -p "Название: " name
-      read -p "Сумма в рублях (например: 349.90): " amount
+      MAX_LIMIT=240
+      REGEN_NORMAL=360       # 6 minutes per plate
 
-      echo "Выберите тип:"
-      echo "1) По дате"
-      echo "2) По количеству дней"
-      read -p "Ваш выбор (1 или 2): " choice
+      # Defaults (fallback only; actual base/time are read from STATE_FILE)
+      DEFAULT_BASE_PLATES=0
+      DEFAULT_START_UTC=$(date -d '2025-10-10 21:50:20 UTC' +%s)  # edit if needed
 
-      case $choice in
-          1)
-              read -p "Дата (ГГГГ-ММ-ДД): " date
-              days=""
-              ;;
-          2)
-              read -p "Количество дней: " days
-              date=""
-              ;;
-          *)
-              echo "Неверный выбор"
-              exit 1
-              ;;
+      # debug: set DEBUG=1 to log to /tmp/wave-plates.debug (doesn't affect waybar output)
+      LOGFILE="/tmp/wave-plates.debug"
+      log() { [[ -n "$DEBUG" ]] && printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOGFILE"; }
+
+      init_state() {
+          if [[ ! -f "$STATE_FILE" ]] || ! jq empty "$STATE_FILE" >/dev/null 2>&1; then
+              cat > "$STATE_FILE" <<EOF
+      {
+        "base_plates": $DEFAULT_BASE_PLATES,
+        "base_time": $DEFAULT_START_UTC,
+        "spent_transactions": []
+      }
+      EOF
+          fi
+      }
+
+      # read numeric field with fallback
+      read_state_field() {
+          local field=$1 fallback=$2
+          jq -r --arg fld "$field" --argjson fb "$fallback" 'if has($fld) then .[$fld] else $fb end' "$STATE_FILE"
+      }
+
+      # calculate plates
+      calculate_plates() {
+          local state base_plates base_time current_time elapsed regen_plates spent_sum total_plates
+
+          state=$(cat "$STATE_FILE")
+          base_plates=$(echo "$state" | jq -r '.base_plates // '"$DEFAULT_BASE_PLATES")
+          base_time=$(echo "$state" | jq -r '.base_time // '"$DEFAULT_START_UTC")
+          current_time=$(date +%s)
+          elapsed=$(( current_time - base_time ))
+
+          if (( elapsed < 0 )); then
+              echo "$base_plates"
+              return
+          fi
+
+          regen_plates=$(( elapsed / REGEN_NORMAL ))
+          # cap so base + regen never exceeds MAX_LIMIT
+          if (( base_plates + regen_plates > MAX_LIMIT )); then
+              regen_plates=$(( MAX_LIMIT - base_plates ))
+              (( regen_plates < 0 )) && regen_plates=0
+          fi
+
+          # Sum spends where tx_time >= base_time
+          # handle both seconds and milliseconds timestamps robustly
+          spent_sum=$(echo "$state" | jq -r --argjson base_time "$base_time" '
+            [ .spent_transactions[]? |
+              ( (if (.time > 1000000000000) then (.time/1000|floor) else .time end) ) as $t |
+              select($t >= $base_time) | .amount ] | add // 0')
+
+          total_plates=$(( base_plates + regen_plates - spent_sum ))
+          (( total_plates < 0 )) && total_plates=0
+          (( total_plates > MAX_LIMIT )) && total_plates=$MAX_LIMIT
+
+          log "calc: now=$current_time base_time=$base_time base=$base_plates regen=$regen_plates spent=$spent_sum total=$total_plates"
+          echo "$total_plates"
+      }
+
+      # append spend
+      use_plates() {
+          local amount=$1 current_time new_tx updated_state tmp
+          current_time=$(date +%s)
+          new_tx=$(jq -n --argjson time "$current_time" --argjson amount "$amount" '{time: $time, amount: $amount}')
+          tmp=$(mktemp)
+          jq --argjson tx "$new_tx" '.spent_transactions += [$tx]' "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
+          log "spend: amount=$amount time=$current_time"
+          calculate_plates
+      }
+
+      # perform sync: set base_plates to given value (or to current calculated plates if none)
+      # and set base_time to now. This ignores older spends by selecting tx.time >= base_time afterwards.
+      perform_sync() {
+          local set_to now tmp desired
+          now=$(date +%s)
+          if [[ -n "$1" && "$1" =~ ^[0-9]+$ ]]; then
+              desired=$1
+          else
+              desired=$(calculate_plates)
+          fi
+          tmp=$(mktemp)
+          # update base_plates and base_time atomically
+          jq --argjson bp "$desired" --argjson bt "$now" '.base_plates = $bp | .base_time = $bt' "$STATE_FILE" > "$tmp" && mv "$tmp" "$STATE_FILE"
+          log "sync: set base_plates=$desired base_time=$now"
+          echo "$desired"
+      }
+
+      sync_operation() {
+          local op=$1 arg=$2
+          (
+              flock -x 200
+              case "$op" in
+                  use60) use_plates 60 ;;
+                  use40) use_plates 40 ;;
+                  calculate) calculate_plates ;;
+                  sync) perform_sync "$arg" ;;
+                  *) calculate_plates ;;
+              esac
+          ) 200>"$SYNC_LOCK_FILE"
+      }
+
+      # main
+      init_state
+
+      case "$1" in
+          use60) plates=$(sync_operation use60) ;;
+          use40) plates=$(sync_operation use40) ;;
+          sync)  plates=$(sync_operation sync "$2") ;;   # usage: sync [NUMBER]
+          *)     plates=$(sync_operation calculate) ;;
       esac
 
-      echo "Типы: monthly, yearly, one-time"
-      read -p "Тип платежа [monthly]: " type
-      type=''${type:-monthly}
-
-      echo "Выберите категорию:"
-      echo "1) subscriptions - Подписки"
-      echo "2) utilities - Коммунальные услуги"
-      echo "3) hosting - Хостинг"
-      echo "4) food - Еда"
-      echo "5) rent - Аренда"
-      echo "6) transport - Транспорт"
-      echo "7) entertainment - Развлечения"
-      echo "8) healthcare - Здоровье"
-      echo "9) other - Другое"
-      read -p "Категория [subscriptions]: " category_num
-
-      case $category_num in
-          1) category="subscriptions" ;;
-          2) category="utilities" ;;
-          3) category="hosting" ;;
-          4) category="food" ;;
-          5) category="rent" ;;
-          6) category="transport" ;;
-          7) category="entertainment" ;;
-          8) category="healthcare" ;;
-          9) category="other" ;;
-          *) category="subscriptions" ;;
-      esac
-
-      echo "Выберите счет оплаты:"
-      echo "1) Liabilities:YandexPay"
-      echo "2) Liabilities:Tinkoff"
-      echo "3) Liabilities:AlfaBank"
-      echo "4) Assets:Cash"
-      echo "5) Assets:TinkoffCard"
-      read -p "Счет [1]: " account_num
-
-      case $account_num in
-          1) ledger_account="Liabilities:YandexPay" ;;
-          2) ledger_account="Liabilities:Tinkoff" ;;
-          3) ledger_account="Liabilities:AlfaBank" ;;
-          4) ledger_account="Assets:Cash" ;;
-          5) ledger_account="Assets:TinkoffCard" ;;
-          *) ledger_account="Liabilities:YandexPay" ;;
-      esac
-
-      if [ -n "$days" ]; then
-          payments-cli add --name "$name" --amount "$amount" --days "$days" --type "$type" --category "$category" --ledger-account "$ledger_account"
+      # display
+      if (( plates <= 180 )); then
+          class="green"
+      elif (( plates <= 240 )); then
+          class="red"
       else
-          payments-cli add --name "$name" --amount "$amount" --date "$date" --type "$type" --category "$category" --ledger-account "$ledger_account"
+          class="purple"
       fi
+
+      echo "{\"text\": \"$plates/$MAX_LIMIT\", \"class\": \"$class\"}"
     '';
   };
 
@@ -292,7 +347,6 @@ in
           "hyprland/language"
           "cpu"
           "memory"
-          "custom/nowplaying"
         ];
         modules-center = [ "hyprland/workspaces" ];
         modules-right = [
@@ -310,31 +364,6 @@ in
           "interval" = 600;
           "tooltip" = false;
           "on-click" = "xdg-open https://yandex.ru/pogoda/moscow";
-        };
-
-        "custom/nowplaying" = {
-          "format" = "{}";
-          "exec" = ''
-            #!/bin/sh
-            status=$(playerctl status 2>/dev/null)
-
-            if [ "$status" = "Playing" ]; then
-              current_artist=$(playerctl metadata artist)
-              current_title=$(playerctl metadata title)
-              echo "▶ $current_artist - $current_title"
-            elif [ "$status" = "Paused" ]; then
-              echo "⏸ Paused"
-            else
-             echo "⏹ No music"
-            fi
-          '';
-          "on-click" = "playerctl play-pause";
-          "on-scroll-up" = "playerctl next";
-          "on-scroll-down" = "playerctl previous";
-          "interval" = 1;
-          "tooltip" = false;
-          "max-length" = 30;
-          "escape" = true;
         };
 
         "hyprland/language" = {
@@ -422,18 +451,60 @@ in
         spacing = 0;
         output = "DVI-D-1";
 
-        modules-left = [ "custom/payments" ];
+        modules-left = [
+          "custom/payments"
+          "custom/nowplaying"
+        ];
         modules-center = [
           "custom/pomodoro"
           "hyprland/workspaces"
         ];
-        modules-right = [ "clock" ];
+        modules-right = [
+          "custom/wave-plates"
+          "clock"
+        ];
+
+        "custom/nowplaying" = {
+          "format" = "{}";
+          "exec" = ''
+            #!/bin/sh
+            status=$(playerctl status 2>/dev/null)
+
+            if [ "$status" = "Playing" ]; then
+              current_artist=$(playerctl metadata artist)
+              current_title=$(playerctl metadata title)
+              echo "▶ $current_artist - $current_title"
+            elif [ "$status" = "Paused" ]; then
+              echo "⏸ Paused"
+            else
+             echo "⏹ No music"
+            fi
+          '';
+          "on-click" = "playerctl play-pause";
+          "on-scroll-up" = "playerctl next";
+          "on-scroll-down" = "playerctl previous";
+          "interval" = 1;
+          "tooltip" = false;
+          "max-length" = 30;
+          "escape" = true;
+        };
 
         "hyprland/workspaces" = {
           disable-scroll = false;
           all-outputs = false;
           format = "{icon}";
           on-click = "activate";
+        };
+
+        "custom/wave-plates" = {
+          "format" = "{}";
+          "exec" = "~/.local/bin/wave-plates-widget";
+          "interval" = 30;
+          "on-click" = "~/.local/bin/wave-plates-widget use60";
+          "on-click-right" = "~/.local/bin/wave-plates-widget use40";
+          "tooltip" = false;
+          "escape" = false;
+          "return-type" = "json";
         };
 
         "custom/pomodoro" = {
@@ -447,11 +518,11 @@ in
 
         "custom/payments" = {
           "format" = "{}";
-          "exec" = "${payments-cli}/bin/payments-cli";
+          "exec" = "${finance-manager}/bin/payments-manager";
           "interval" = 60;
-          "on-click" = "${payments-cli}/bin/payments-cli paid";
+          "on-click" = "${finance-manager}/bin/payments-manager paid";
           "on-click-right" =
-            "sh -c '${payments-cli}/bin/payments-cli list | head -n 30 | tr \"\\n\" \"\\r\" | xargs -0 notify-send \"Список платежей\"'";
+            "sh -c '${finance-manager}/bin/payments-manager list | head -n 30 | tr \"\\n\" \"\\r\" | xargs -0 notify-send \"Список платежей\"'";
           "tooltip" = false;
         };
 
@@ -519,11 +590,16 @@ in
         border-bottom-right-radius: 10px;
       }
 
-      #tray, #pulseaudio, #pulseaudio\\#microphone, #custom-weather, #clock, #custom-power {
+      #tray, #pulseaudio, #pulseaudio\\#microphone, #custom-weather, #custom-power {
         background-color: #323844;
         margin: 6px 0 0 0;
         padding: 4px 8px;
         border-radius: 0;
+      }
+
+      #custom-weather {
+      border-top-right-radius: 10px;
+      border-bottom-right-radius: 10px;
       }
 
       #tray {
@@ -534,8 +610,7 @@ in
 
       #custom-power {
         margin-right: 6px;
-        border-top-right-radius: 10px;
-        border-bottom-right-radius: 10px;
+        border-radius: 10px;
       }
 
       #custom-nowplaying {
@@ -601,31 +676,57 @@ in
         border-width: 0px;
       }
 
-      #secondaryBar #custom-pomodoro {
+      #custom-pomodoro {
         background-color: #323844;
         margin: 6px 0 0 0;
         padding: 4px 8px;
-        border-radius: 0;
+        border-radius: 10px;
       }
 
-      #secondaryBar #custom-payments {
+      #custom-payments {
         background-color: #323844;
         margin: 6px 0 0 0;
         padding: 4px 8px;
-        border-radius: 0;
+        border-radius: 10px;
       }
 
-      #secondaryBar #clock {
+      #clock {
         background-color: #323844;
         margin: 6px 6px 0 0;
         padding: 4px 8px;
-        border-radius: 0 10px 10px 0;
+        border-radius: 10px;
       }
 
-      #secondaryBar #workspaces:hover,
-      #secondaryBar #custom-pomodoro:hover,
-      #secondaryBar #custom-payments:hover,
-      #secondaryBar #clock:hover {
+      #custom-wave-plates {
+      background-image: url("/home/snrx/icons/wave-plate.png");
+      background-repeat: no-repeat;
+      background-size: 24px 24px;
+      background-position: left center;
+      padding-left: 20px;
+      padding-right:6px;
+      background-color: #323844;
+      margin: 6px 0 0 6px;
+      border-radius: 10px;
+      min-width: 60px;
+      }
+
+      #custom-wave-plates.green {
+        color: #8bc34a; 
+      }
+
+      #custom-wave-plates.red {
+        color: #f44336; 
+      }
+
+      #custom-wave-plates.purple {
+        color: #9c27b0; 
+      }
+
+
+      #workspaces:hover,
+      #custom-pomodoro:hover,
+      #custom-payments:hover,
+      #clock:hover {
         background-color: rgba(255, 107, 53, 0.15);
         color: #FFFFFF;
         border-top: none;
@@ -635,6 +736,18 @@ in
         box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
         transition: border-bottom 0.6s ease-in-out;
       }
+
+      #custom-wave-plates:hover {
+        background-color: rgba(255, 107, 53, 0.15);
+        color: #FFFFFF;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+        border-bottom: 1px solid #FF6B35;
+        box-shadow: 0 0 5px rgba(255, 107, 53, 0.5);
+        transition: border-bottom 0.6s ease-in-out;
+      }
+
 
       #secondaryBar #workspaces button {
         background: transparent;
@@ -658,5 +771,5 @@ in
       }
     '';
   };
-  home.packages = [ payments-cli ];
+  home.packages = [ finance-manager ];
 }

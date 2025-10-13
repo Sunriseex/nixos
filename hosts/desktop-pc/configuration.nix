@@ -107,6 +107,15 @@
   # Enabled services
   services.openssh.enable = true;
 
+  services.timesyncd = {
+    enable = true;
+    servers = [
+      "ntp1.stratum2.ru"
+      "time.cloudflare.com"
+      "pool.ntp.org"
+    ];
+  };
+
   system.autoUpgrade = {
     enable = true;
     flake = "/home/snrx/nixos";
