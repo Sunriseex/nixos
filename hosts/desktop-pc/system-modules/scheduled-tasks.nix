@@ -3,7 +3,7 @@
   ...
 }:
 let
-  deposit-manager = import ../../../scripts/payments-cli/default.nix { inherit pkgs; };
+  deposit-manager = import ../../../scripts/finance-manager/default.nix { inherit pkgs; };
 in
 {
   systemd.services."scheduled-auto-accrue-interest" = {
@@ -12,7 +12,7 @@ in
       Type = "oneshot";
       User = "snrx";
       WorkingDirectory = "/home/snrx";
-      ExecStart = "${pkgs.bash}/bin/bash /home/snrx/nixos/scripts/payments-cli/scripts/auto-accrue-interest.sh";
+      ExecStart = "${pkgs.bash}/bin/bash /home/snrx/nixos/scripts/finance-manager/scripts/auto-accrue-interest.sh";
       StandardOutput = "journal";
       StandardError = "journal";
     };

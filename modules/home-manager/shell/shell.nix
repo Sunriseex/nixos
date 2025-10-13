@@ -49,8 +49,8 @@
       nix-update = "nix flake update";
       nix-clear = "sudo nix-collect-garbage -d";
       cd = "z";
-      payment = "sh ~/nixos/scripts/payments-cli/scripts/interactive-add.sh";
-      deposit = "sh ~/nixos/scripts/payments-cli/scripts/deposit-interactive.sh";
+      payment = "sh ~/nixos/scripts/finance-manager/scripts/interactive-add.sh";
+      deposit = "sh ~/nixos/scripts/finance-manager/scripts/deposit-interactive.sh";
     };
 
   };

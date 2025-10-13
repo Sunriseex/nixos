@@ -1,6 +1,6 @@
 { pkgs, ... }:
 let
-  payments-cli = pkgs.callPackage ../../../scripts/payments-cli/default.nix { };
+  finance-manager = pkgs.callPackage ../../../scripts/finance-manager/default.nix { };
 in
 {
   home.file.".config/waybar/scripts/wave-plates.sh" = {
@@ -139,90 +139,6 @@ in
       fi
 
       echo "{\"text\": \"$plates/$MAX_LIMIT\", \"class\": \"$class\"}"
-    '';
-  };
-
-  home.file.".local/bin/add-payment" = {
-    executable = true;
-    text = ''
-      #!/bin/sh
-      echo "Добавление нового платежа"
-      echo "========================"
-
-      read -p "Название: " name
-      read -p "Сумма в рублях (например: 349.90): " amount
-
-      echo "Выберите тип:"
-      echo "1) По дате"
-      echo "2) По количеству дней"
-      read -p "Ваш выбор (1 или 2): " choice
-
-      case $choice in
-          1)
-              read -p "Дата (ГГГГ-ММ-ДД): " date
-              days=""
-              ;;
-          2)
-              read -p "Количество дней: " days
-              date=""
-              ;;
-          *)
-              echo "Неверный выбор"
-              exit 1
-              ;;
-      esac
-
-      echo "Типы: monthly, yearly, one-time"
-      read -p "Тип платежа [monthly]: " type
-      type=''${type:-monthly}
-
-      echo "Выберите категорию:"
-      echo "1) subscriptions - Подписки"
-      echo "2) utilities - Коммунальные услуги"
-      echo "3) hosting - Хостинг"
-      echo "4) food - Еда"
-      echo "5) rent - Аренда"
-      echo "6) transport - Транспорт"
-      echo "7) entertainment - Развлечения"
-      echo "8) healthcare - Здоровье"
-      echo "9) other - Другое"
-      read -p "Категория [subscriptions]: " category_num
-
-      case $category_num in
-          1) category="subscriptions" ;;
-          2) category="utilities" ;;
-          3) category="hosting" ;;
-          4) category="food" ;;
-          5) category="rent" ;;
-          6) category="transport" ;;
-          7) category="entertainment" ;;
-          8) category="healthcare" ;;
-          9) category="other" ;;
-          *) category="subscriptions" ;;
-      esac
-
-      echo "Выберите счет оплаты:"
-      echo "1) Liabilities:YandexPay"
-      echo "2) Liabilities:Tinkoff"
-      echo "3) Liabilities:AlfaBank"
-      echo "4) Assets:Cash"
-      echo "5) Assets:TinkoffCard"
-      read -p "Счет [1]: " account_num
-
-      case $account_num in
-          1) ledger_account="Liabilities:YandexPay" ;;
-          2) ledger_account="Liabilities:Tinkoff" ;;
-          3) ledger_account="Liabilities:AlfaBank" ;;
-          4) ledger_account="Assets:Cash" ;;
-          5) ledger_account="Assets:TinkoffCard" ;;
-          *) ledger_account="Liabilities:YandexPay" ;;
-      esac
-
-      if [ -n "$days" ]; then
-          payments-cli add --name "$name" --amount "$amount" --days "$days" --type "$type" --category "$category" --ledger-account "$ledger_account"
-      else
-          payments-cli add --name "$name" --amount "$amount" --date "$date" --type "$type" --category "$category" --ledger-account "$ledger_account"
-      fi
     '';
   };
 
@@ -602,11 +518,11 @@ in
 
         "custom/payments" = {
           "format" = "{}";
-          "exec" = "${payments-cli}/bin/payments-cli";
+          "exec" = "${finance-manager}/bin/payments-manager";
           "interval" = 60;
-          "on-click" = "${payments-cli}/bin/payments-cli paid";
+          "on-click" = "${finance-manager}/bin/payments-manager paid";
           "on-click-right" =
-            "sh -c '${payments-cli}/bin/payments-cli list | head -n 30 | tr \"\\n\" \"\\r\" | xargs -0 notify-send \"Список платежей\"'";
+            "sh -c '${finance-manager}/bin/payments-manager list | head -n 30 | tr \"\\n\" \"\\r\" | xargs -0 notify-send \"Список платежей\"'";
           "tooltip" = false;
         };
 
@@ -855,5 +771,5 @@ in
       }
     '';
   };
-  home.packages = [ payments-cli ];
+  home.packages = [ finance-manager ];
 }
