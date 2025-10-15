@@ -1,55 +1,20 @@
 package calculator
 
 import (
-	"math/big"
 	"time"
+
+	"github.com/shopspring/decimal"
 
 	"github.com/sunriseex/finance-manager/internal/models"
 )
 
-func calculateIncomeWithPromoTransition(deposit models.Deposit, amount *big.Float, totalDays, promoDaysRemaining int) *big.Float {
-	var incomePromo *big.Float
-	if deposit.PromoRate != nil {
-		promoRate := big.NewFloat(*deposit.PromoRate)
-		switch deposit.Capitalization {
-		case "daily":
-			incomePromo = calculateDailyCapitalization(amount, promoRate, promoDaysRemaining, 365)
-		case "monthly":
-			incomePromo = calculateMonthlyCapitalization(amount, promoRate, promoDaysRemaining)
-		case "end":
-			incomePromo = calculateEndTerm(amount, promoRate, promoDaysRemaining)
-		default:
-			incomePromo = calculateEndTerm(amount, promoRate, promoDaysRemaining)
-
-		}
-
-	} else {
-		incomePromo = new(big.Float).SetInt64(0)
-	}
-	amountAfterPromo := new(big.Float).Add(amount, incomePromo)
-	remainingDays := totalDays - promoDaysRemaining
-	baseRate := big.NewFloat(deposit.InterestRate)
-	var incomeRemaining *big.Float
-	switch deposit.Capitalization {
-	case "daily":
-		incomeRemaining = calculateDailyCapitalization(amountAfterPromo, baseRate, remainingDays, 365)
-	case "monthly":
-		incomeRemaining = calculateMonthlyCapitalization(amountAfterPromo, baseRate, remainingDays)
-	case "end":
-		incomeRemaining = calculateEndTerm(amountAfterPromo, baseRate, remainingDays)
-	default:
-		incomeRemaining = calculateEndTerm(amountAfterPromo, baseRate, remainingDays)
-	}
-	return new(big.Float).Add(incomePromo, incomeRemaining)
-}
-
-func CalculateIncome(deposit models.Deposit, days int) *big.Float {
+func CalculateIncome(deposit models.Deposit, days int) decimal.Decimal {
 	if deposit.Amount <= 0 || days <= 0 {
-		return new(big.Float).SetInt64(0)
+		return decimal.Zero
 	}
 
-	amount := new(big.Float).SetInt64(int64(deposit.Amount))
-	amount.Quo(amount, big.NewFloat(100.0))
+	amount := decimal.NewFromInt(int64(deposit.Amount)).Div(decimal.NewFromInt(100))
+	effectiveRate := getEffectiveRateDecimal(deposit)
 
 	active, daysUntilPromoEnd := CheckPromoStatus(deposit)
 
@@ -57,11 +22,9 @@ func CalculateIncome(deposit models.Deposit, days int) *big.Float {
 		return calculateIncomeWithPromoTransition(deposit, amount, days, daysUntilPromoEnd)
 	}
 
-	effectiveRate := getEffectiveRateBig(deposit)
-
 	switch deposit.Capitalization {
 	case "daily":
-		return calculateDailyCapitalization(amount, effectiveRate, days, 365)
+		return calculateDailyCapitalization(amount, effectiveRate, days)
 	case "monthly":
 		return calculateMonthlyCapitalization(amount, effectiveRate, days)
 	case "end":
@@ -87,88 +50,111 @@ func CheckPromoStatus(deposit models.Deposit) (bool, int) {
 	return daysUntilEnd > 0, daysUntilEnd
 }
 
-func CalculateTotalTermIncome(deposit models.Deposit) *big.Float {
+func CalculateTotalTermIncome(deposit models.Deposit) decimal.Decimal {
 	if deposit.Type != "term" || deposit.StartDate == "" || deposit.EndDate == "" {
-		return big.NewFloat(0.0)
+		return decimal.Zero
 	}
 
 	start, err := time.Parse("2006-01-02", deposit.StartDate)
 	if err != nil {
-		return big.NewFloat(0.0)
+		return decimal.Zero
 	}
 
 	end, err := time.Parse("2006-01-02", deposit.EndDate)
 	if err != nil {
-		return big.NewFloat(0.0)
+		return decimal.Zero
 	}
 
 	totalDays := int(end.Sub(start).Hours() / 24)
 	if totalDays <= 0 {
-		return big.NewFloat(0.0)
+		return decimal.Zero
 	}
 
 	return CalculateIncome(deposit, totalDays)
 }
 
-func calculateDailyCapitalization(amount, rate *big.Float, days int, daysInYear float64) *big.Float {
-	dailyRate := new(big.Float).Quo(rate, big.NewFloat(daysInYear*100))
-	one := big.NewFloat(1.0)
+func calculateIncomeWithPromoTransition(deposit models.Deposit, amount decimal.Decimal, totalDays, promoDaysRemaining int) decimal.Decimal {
+	var incomePromo decimal.Decimal
 
-	factor := new(big.Float).Add(one, dailyRate)
-	factor = pow(factor, days)
+	if deposit.PromoRate != nil {
 
-	result := new(big.Float).Sub(factor, one)
-	result.Mul(result, amount)
+		promoRate := decimal.NewFromFloat(*deposit.PromoRate)
+		incomePromo = calculateByCapitalization(amount, promoRate, promoDaysRemaining, deposit.Capitalization)
 
+	} else {
+
+		incomePromo = decimal.Zero
+
+	}
+	amountAfterPromo := amount.Add(incomePromo)
+
+	remainingDays := totalDays - promoDaysRemaining
+
+	baseRate := decimal.NewFromFloat(deposit.InterestRate)
+
+	var incomeRemaining decimal.Decimal
+
+	incomeRemaining = calculateByCapitalization(amountAfterPromo, baseRate, remainingDays, deposit.Capitalization)
+
+	return incomePromo.Add(incomeRemaining)
+}
+
+func calculateByCapitalization(amount, rate decimal.Decimal, days int, capitalization string) decimal.Decimal {
+	switch capitalization {
+	case "daily":
+		return calculateDailyCapitalization(amount, rate, days)
+	case "monthly":
+		return calculateMonthlyCapitalization(amount, rate, days)
+	case "end":
+		return calculateEndTerm(amount, rate, days)
+	default:
+		return calculateEndTerm(amount, rate, days)
+	}
+}
+
+func calculateDailyCapitalization(amount, rate decimal.Decimal, days int) decimal.Decimal {
+	daysInYear := decimal.NewFromInt(365)
+	dailyRate := rate.Div(decimal.NewFromInt(100)).Div(daysInYear)
+	one := decimal.NewFromInt(1)
+
+	factor := one.Add(dailyRate).Pow(decimal.NewFromInt(int64(days)))
+	result := factor.Sub(one).Mul(amount)
 	return result
 }
 
-func calculateMonthlyCapitalization(amount, rate *big.Float, days int) *big.Float {
-	months := new(big.Float).Quo(big.NewFloat(float64(days)), big.NewFloat(30.44))
-	monthlyRate := new(big.Float).Quo(rate, big.NewFloat(1200))
-	one := big.NewFloat(1.0)
+func calculateMonthlyCapitalization(amount, rate decimal.Decimal, days int) decimal.Decimal {
+	daysInMonth := decimal.NewFromFloat(30.44)
+	months := decimal.NewFromInt(int64(days)).Div(daysInMonth)
+	monthlyRate := rate.Div(decimal.NewFromInt(1200))
+	one := decimal.NewFromInt(1)
 
-	factor := new(big.Float).Add(one, monthlyRate)
-	monthsInt := int(months.Mul(months, big.NewFloat(1.0)).Sign())
+	monthsInt := int(months.IntPart())
 	if monthsInt > 0 {
-		factor = pow(factor, monthsInt)
+		factor := one.Add(monthlyRate).Pow(decimal.NewFromInt(int64(monthsInt)))
+		result := factor.Sub(one).Mul(amount)
+		return result
 	}
 
-	result := new(big.Float).Sub(factor, one)
-	result.Mul(result, amount)
+	return decimal.Zero
+}
+
+func calculateEndTerm(amount, rate decimal.Decimal, days int) decimal.Decimal {
+	daysDecimal := decimal.NewFromInt(int64(days))
+	daysInYear := decimal.NewFromInt(365)
+
+	result := amount.Mul(rate).Div(decimal.NewFromInt(100))
+	result = result.Mul(daysDecimal).Div(daysInYear)
 
 	return result
 }
 
-func calculateEndTerm(amount, rate *big.Float, days int) *big.Float {
-	result := new(big.Float).Mul(amount, rate)
-	result.Quo(result, big.NewFloat(100.0))
-	result.Mul(result, big.NewFloat(float64(days)))
-	result.Quo(result, big.NewFloat(365.0))
-	return result
-}
-
-func pow(x *big.Float, n int) *big.Float {
-	if n == 0 {
-		return big.NewFloat(1.0)
-	}
-
-	result := new(big.Float).Copy(x)
-	for i := 1; i < n; i++ {
-		result.Mul(result, x)
-	}
-	return result
-}
-
-func getEffectiveRateBig(deposit models.Deposit) *big.Float {
+func getEffectiveRateDecimal(deposit models.Deposit) decimal.Decimal {
 	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
-		return big.NewFloat(deposit.InterestRate)
+		return decimal.NewFromFloat(deposit.InterestRate)
 	}
-
 	active, _ := CheckPromoStatus(deposit)
 	if active {
-		return big.NewFloat(*deposit.PromoRate)
+		return decimal.NewFromFloat(*deposit.PromoRate)
 	}
-
-	return big.NewFloat(deposit.InterestRate)
+	return decimal.NewFromFloat(deposit.InterestRate)
 }
