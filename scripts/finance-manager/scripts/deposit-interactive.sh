@@ -27,316 +27,321 @@ info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-check_ledger_file() {
-    if [[ ! -f "$LEDGER_PATH" ]]; then
-        warn "Файл ledger не найден: $LEDGER_PATH"
-        return 1
-    fi
-    return 0
-}
-
-record_to_ledger() {
-    local date="$1"
-    local description="$2"
-    local amount="$3"
-    local from_account="$4"
-    local to_account="$5"
-
-    if ! check_ledger_file; then
-        return 1
+check_dependencies() {
+    if ! command -v deposit-manager &>/dev/null; then
+        error "deposit-manager не найден. Убедитесь, что он установлен и доступен в PATH"
+        exit 1
     fi
 
-    local amount_formatted="₽${amount}"
-
-    local ledger_entry="$date $description\n"
-    ledger_entry+="    $to_account    $amount_formatted\n"
-    ledger_entry+="    $from_account    -$amount_formatted\n"
-
-    echo -e "\n$ledger_entry" >>"$LEDGER_PATH"
-
-    log "Операция записана в ledger: $LEDGER_PATH"
-    return 0
-}
-
-record_deposit_creation() {
-    local name="$1"
-    local amount="$2"
-    local from_account="$3"
-    local to_account="$4"
-    local date=$(date +%Y-%m-%d)
-    local description="Открытие вклада: $name"
-
-    record_to_ledger "$date" "$description" "$amount" "$from_account" "$to_account"
-}
-
-record_deposit_topup() {
-    local name="$1"
-    local amount="$2"
-    local from_account="$3"
-    local to_account="$4"
-    local date=$(date +%Y-%m-%d)
-    local description="Пополнение вклада: $name"
-
-    record_to_ledger "$date" "$description" "$amount" "$from_account" "$to_account"
-}
-
-record_interest() {
-    local name="$1"
-    local amount="$2"
-    local days="$3"
-    local to_account="$4"
-    local date=$(date +%Y-%m-%d)
-    local description="Начисление процентов за $days дней: $name"
-
-    record_to_ledger "$date" "$description" "$amount" "Income:Interest" "$to_account"
-}
-get_default_account() {
-    local bank="$1"
-    local account_type="$2"
-
-    local bank_safe=$(echo "$bank" | tr ' ' '_' | tr -cd '[:alnum:]_')
-
-    if [[ "$account_type" == "from" ]]; then
-        echo "Assets:Banking:${bank_safe}"
-    else
-        echo "Assets:Banking:${bank_safe}:Savings"
+    if ! command -v jq &>/dev/null; then
+        error "Утилита jq не найдена. Установите её в ваш configuration.nix"
+        exit 1
     fi
 }
 
-select_accounts() {
-    local bank="$1"
-    local default_from=$(get_default_account "$bank" "from")
-    local default_to=$(get_default_account "$bank" "to")
-
-    echo ""
-    echo "Выбор счетов для операции:"
-    echo "Счет списания (откуда):"
-    read -p "  [по умолчанию: $default_from]: " from_account
-    echo "Счет зачисления (куда):"
-    read -p "  [по умолчанию: $default_to]: " to_account
-
-    from_account=${from_account:-$default_from}
-    to_account=${to_account:-$default_to}
-}
-
-calculate_earned_interest() {
-    local deposit_name="$1"
-    local bank="$2"
-
-    echo "0.00"
-}
-
-calculate_income_interactive() {
+show_existing_deposits() {
     echo "=========================================="
-    echo "Расчет дохода по вкладу"
-    echo "=========================================="
-
-    local deposits_list
-    deposits_list=$(deposit-manager list 2>/dev/null)
-
-    if [[ -z "$deposits_list" ]]; then
-        error "Нет доступных вкладов для расчета"
-        return 1
-    fi
-
     echo "Ваши вклады:"
-    echo "$deposits_list"
+    echo "=========================================="
+
+    if [[ -f "$DEPOSITS_FILE" ]]; then
+        timeout 10s deposit-manager list
+        local exit_code=$?
+
+        if [[ $exit_code -eq 124 ]]; then
+            error "Команда выполняется слишком долго, прерываю..."
+            return 1
+        elif [[ $exit_code -ne 0 ]]; then
+            error "Ошибка при выполнении команды (код: $exit_code)"
+            return 1
+        fi
+    else
+        echo "Файл вкладов не найден: $DEPOSITS_FILE"
+    fi
+}
+
+calculate_days_until_date() {
+    local target_date="$1"
+    local current_date=$(date +%Y-%m-%d)
+
+    local target_sec=$(date -d "$target_date" +%s 2>/dev/null)
+    local current_sec=$(date -d "$current_date" +%s 2>/dev/null)
+
+    if [[ -z "$target_sec" || -z "$current_sec" ]]; then
+        echo "0"
+        return 1
+    fi
+
+    local diff_sec=$((target_sec - current_sec))
+    local days=$((diff_sec / 86400))
+
+    if [[ $days -lt 0 ]]; then
+        echo "0"
+    else
+        echo "$days"
+    fi
+}
+
+extract_income_from_output() {
+    local output="$1"
+    echo "$output" | grep "Ожидаемый доход" | sed -E 's/.* ([0-9]+\.[0-9]+) руб.*/\1/' | head -1
+}
+
+calculate_single_deposit_income() {
+    echo "=========================================="
+    echo "Расчет дохода по вкладу до даты"
+    echo "=========================================="
+
+    show_existing_deposits
     echo ""
 
-    local deposits=()
-    local i=1
+    local deposits_json
+    if [[ -f "$DEPOSITS_FILE" ]]; then
+        deposits_json=$(jq -r '.deposits[] | "\(.name)|\(.bank)|\(.id)"' "$DEPOSITS_FILE")
+    else
+        error "Файл вкладов не найден"
+        return 1
+    fi
 
+    if [[ -z "$deposits_json" ]]; then
+        error "Нет доступных вкладов"
+        return 1
+    fi
+
+    local i=1
+    local deposits=()
     while IFS= read -r line; do
-        if [[ $line =~ [0-9]+\.\ ([^\(]+)\ \(([^\)]+)\) ]]; then
-            deposit_name="${BASH_REMATCH[1]}"
-            bank_name="${BASH_REMATCH[2]}"
-            deposits[i]="$deposit_name|$bank_name"
-            echo "  $i) $deposit_name ($bank_name)"
+        if [[ -n "$line" ]]; then
+            deposits[i]="$line"
+            local name=$(echo "$line" | cut -d'|' -f1)
+            local bank=$(echo "$line" | cut -d'|' -f2)
+            echo "  $i) $name ($bank)"
             ((i++))
         fi
-    done <<<"$deposits_list"
-
-    if [[ ${#deposits[@]} -eq 0 ]]; then
-        error "Не удалось распознать список вкладов"
-        return 1
-    fi
+    done <<<"$deposits_json"
 
     while true; do
         read -p "Выберите вклад [1-$((i - 1))]: " choice
         if [[ $choice =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le $((i - 1)) ]]; then
             selected="${deposits[$choice]}"
             deposit_name=$(echo "$selected" | cut -d'|' -f1)
-            bank_name=$(echo "$selected" | cut -d'|' -f2)
+            deposit_bank=$(echo "$selected" | cut -d'|' -f2)
+            deposit_id=$(echo "$selected" | cut -d'|' -f3)
             break
         else
             error "Введите число от 1 до $((i - 1))"
         fi
     done
 
-    log "Поиск вклада '$deposit_name' в банке '$bank_name'..."
-    deposit_id=$(jq -r --arg name "$deposit_name" --arg bank "$bank_name" '.deposits[] | select(.name == $name and .bank == $bank) | .id' "$DEPOSITS_FILE" 2>/dev/null)
-
-    if [[ -z "$deposit_id" || "$deposit_id" == "null" ]]; then
-        error "Не удалось найти ID вклада '$deposit_name' в банке '$bank_name'"
-        return 1
-    fi
-
     while true; do
-        read -p "Введите количество дней для расчета: " days
-        if [[ $days =~ ^[0-9]+$ ]] && [[ $days -gt 0 ]]; then
-            break
+        read -p "Введите дату окончания расчета (ГГГГ-ММ-ДД): " target_date
+        if date -d "$target_date" >/dev/null 2>&1; then
+            days=$(calculate_days_until_date "$target_date")
+            if [[ $days -gt 0 ]]; then
+                break
+            else
+                error "Дата должна быть в будущем"
+            fi
         else
-            error "Введите положительное целое число"
+            error "Некорректная дата. Используйте формат ГГГГ-ММ-ДД"
         fi
     done
 
-    log "Расчет дохода по вкладу '$deposit_name'..."
-    deposit-manager calculate "$deposit_id" "$days"
+    log "Расчет дохода по вкладу '$deposit_name' за $days дней..."
 
-    return $?
+    local output
+    output=$(deposit-manager calculate "$deposit_id" "$days" 2>&1)
+    echo "$output"
 }
 
-find_deposit_id() {
-    local name="$1"
-    local bank="$2"
+days_between() {
+    local start_date="$1"
+    local end_date="$2"
 
-    if [[ -z "$name" || -z "$bank" ]]; then
-        error "Использование: $0 find <name> <bank>"
+    local start_sec=$(date -d "$start_date" +%s 2>/dev/null)
+    local end_sec=$(date -d "$end_date" +%s 2>/dev/null)
+
+    if [[ -z "$start_sec" || -z "$end_sec" ]]; then
+        echo "0"
         return 1
     fi
 
-    echo "Поиск ID вклада: $name в банке $bank"
-    local deposit_id=$(get_deposit_id "$name" "$bank")
-
-    if [[ -n "$deposit_id" ]]; then
-        echo "Найден ID: $deposit_id"
-        return 0
-    else
-        error "Вклад не найден"
-        return 1
-    fi
+    local diff_sec=$((end_sec - start_sec))
+    local days=$((diff_sec / 86400))
+    echo "$days"
 }
 
-check_deposit_exists() {
-    local name="$1"
-    local bank="$2"
-
-    if [[ -f "$DEPOSITS_FILE" ]]; then
-        if jq -e --arg name "$name" --arg bank "$bank" '.deposits[] | select(.name == $name and .bank == $bank)' "$DEPOSITS_FILE" >/dev/null 2>&1; then
-            return 0
-        fi
-    fi
-
-    if deposit-manager list 2>/dev/null | grep -q "Name: $name.*Bank: $bank"; then
-        return 0
-    fi
-
-    return 1
-}
-
-get_deposit_id() {
-    local name="$1"
-    local bank="$2"
-
-    if [[ -f "$DEPOSITS_FILE" ]]; then
-        local existing_id=$(jq -r --arg name "$name" --arg bank "$bank" '.deposits[] | select(.name == $name and .bank == $bank) | .id' "$DEPOSITS_FILE" 2>/dev/null)
-
-        if [[ -n "$existing_id" && "$existing_id" != "null" ]]; then
-            echo "$existing_id"
-            return 0
-        fi
-    fi
-
-    warn "Вклад не найден, создается новый ID"
-    echo "$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')-$(date +%s)"
-}
-
-create_new_deposit() {
-    local name="$1"
-    local bank="$2"
-    local deposit_type="$3"
-    local amount="$4"
-    local rate="$5"
-    local term="$6"
-    local promo_rate_value="$7"
-    local promo_end_date="$8"
-
-    log "Создание нового вклада: $name"
-
-    select_accounts "$bank"
-
-    local command="deposit-manager create --name \"$name\" --bank \"$bank\" --type \"$deposit_type\" --amount \"$amount\" --rate \"$rate\""
-
-    if [[ "$deposit_type" == "term" && -n "$term" ]]; then
-        command="$command --term \"$term\""
-    fi
-
-    if [[ -n "$promo_rate_value" ]]; then
-        command="$command --promo-rate \"$promo_rate_value\""
-    fi
-
-    if [[ -n "$promo_end_date" ]]; then
-        command="$command --promo-end \"$promo_end_date\""
-    fi
-
-    echo "Выполняется команда: $command"
-    eval "$command"
-
-    local result=$?
-
-    if [[ $result -eq 0 ]]; then
-        record_deposit_creation "$name" "$amount" "$from_account" "$to_account"
-    fi
-
-    return $result
-}
-
-topup_existing_deposit() {
-    local name="$1"
-    local bank="$2"
-    local amount="$3"
-
-    log "Пополнение существующего вклада: $name"
-
-    local deposit_id
-    deposit_id=$(get_deposit_id "$name" "$bank")
-    if [[ $? -ne 0 || -z "$deposit_id" ]]; then
-        error "Не удалось найти ID вклада '$name' в банке '$bank'"
-        show_existing_deposits
-        return 1
-    fi
-
-    select_accounts "$bank"
-
-    log "Используется ID вклада: $deposit_id"
-
-    deposit-manager topup "$deposit_id" "$amount" "Пополнение через интерактивный скрипт"
-
-    local result=$?
-
-    if [[ $result -eq 0 ]]; then
-        record_deposit_topup "$name" "$amount" "$from_account" "$to_account"
-    else
-        error "Ошибка при пополнении вклада"
-        echo "Попробуйте выполнить команду вручную:"
-        echo "deposit-manager topup \"$deposit_id\" \"$amount\""
-    fi
-
-    return $result
-}
-
-add_or_update_deposit() {
+calculate_total_term_income() {
     echo "=========================================="
-    echo "Добавление/обновление вклада"
+    echo "Расчет дохода за весь срок по срочным вкладам"
     echo "=========================================="
 
-    local promo_rate_value=""
-    local promo_end_date=""
-    local capitalization=""
-    local auto_renewal_flag=""
+    # Получаем список вкладов
+    if [[ ! -f "$DEPOSITS_FILE" ]]; then
+        error "Файл вкладов не найден"
+        return 1
+    fi
 
-    show_existing_deposits
+    local deposits_json
+    deposits_json=$(jq -r '.deposits[] | "\(.name)|\(.bank)|\(.id)|\(.type)|\(.end_date)|\(.start_date)"' "$DEPOSITS_FILE")
+
+    if [[ -z "$deposits_json" ]]; then
+        error "Нет доступных вкладов"
+        return 1
+    fi
+
+    local total_income_full_term=0
+    local total_income_remaining=0
+    local deposit_count=0
+
     echo ""
+    echo "Доход по срочным вкладам:"
+    echo "----------------------------------------"
+
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            deposit_name=$(echo "$line" | cut -d'|' -f1)
+            deposit_bank=$(echo "$line" | cut -d'|' -f2)
+            deposit_id=$(echo "$line" | cut -d'|' -f3)
+            deposit_type=$(echo "$line" | cut -d'|' -f4)
+            deposit_end_date=$(echo "$line" | cut -d'|' -f5)
+            deposit_start_date=$(echo "$line" | cut -d'|' -f6)
+
+            # Показываем только срочные вклады с указанными датами
+            if [[ "$deposit_type" == "term" && "$deposit_end_date" != "null" && -n "$deposit_end_date" && "$deposit_start_date" != "null" && -n "$deposit_start_date" ]]; then
+                total_days=$(days_between "$deposit_start_date" "$deposit_end_date")
+                remaining_days=$(calculate_days_until_date "$deposit_end_date")
+
+                if [[ $total_days -gt 0 ]]; then
+                    echo "  $deposit_name ($deposit_bank):"
+                    echo "    Период: с $deposit_start_date по $deposit_end_date"
+                    echo "    Всего дней: $total_days, осталось: $remaining_days"
+
+                    # Расчет дохода за весь срок
+                    local output_full
+                    output_full=$(deposit-manager calculate "$deposit_id" "$total_days" 2>&1)
+                    local result_full
+                    result_full=$(extract_income_from_output "$output_full")
+
+                    if [[ -n "$result_full" && "$result_full" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+                        echo "    Доход за весь срок: $result_full руб."
+                        total_income_full_term=$(echo "$total_income_full_term + $result_full" | bc -l 2>/dev/null || echo "0")
+                    else
+                        echo "    Доход за весь срок: ошибка расчета"
+                    fi
+
+                    # Расчет дохода за оставшийся срок
+                    if [[ $remaining_days -gt 0 ]]; then
+                        local output_remaining
+                        output_remaining=$(deposit-manager calculate "$deposit_id" "$remaining_days" 2>&1)
+                        local result_remaining
+                        result_remaining=$(extract_income_from_output "$output_remaining")
+
+                        if [[ -n "$result_remaining" && "$result_remaining" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+                            echo "    Доход за оставшийся срок: $result_remaining руб."
+                            total_income_remaining=$(echo "$total_income_remaining + $result_remaining" | bc -l 2>/dev/null || echo "0")
+                        else
+                            echo "    Доход за оставшийся срок: ошибка расчета"
+                        fi
+                    else
+                        echo "    Срок вклада истек"
+                    fi
+
+                    echo ""
+                    ((deposit_count++))
+                else
+                    echo "  $deposit_name ($deposit_bank): некорректный срок"
+                fi
+            fi
+        fi
+    done <<<"$deposits_json"
+
+    echo "----------------------------------------"
+    if [[ $deposit_count -gt 0 ]]; then
+        printf "ИТОГО: %d срочных вкладов\n" "$deposit_count"
+        printf "Общий доход за весь срок: %.2f руб.\n" "$total_income_full_term"
+        if (($(echo "$total_income_remaining > 0" | bc -l))); then
+            printf "Общий доход за оставшийся срок: %.2f руб.\n" "$total_income_remaining"
+        fi
+    else
+        echo "Нет активных срочных вкладов"
+    fi
+}
+
+calculate_all_deposits_income() {
+    echo "=========================================="
+    echo "Расчет общего дохода по всем вкладам до даты"
+    echo "=========================================="
+
+    while true; do
+        read -p "Введите дату окончания расчета (ГГГГ-ММ-ДД): " target_date
+        if date -d "$target_date" >/dev/null 2>&1; then
+            days=$(calculate_days_until_date "$target_date")
+            if [[ $days -gt 0 ]]; then
+                break
+            else
+                error "Дата должна быть в будущем"
+            fi
+        else
+            error "Некорректная дата. Используйте формат ГГГГ-ММ-ДД"
+        fi
+    done
+
+    if [[ ! -f "$DEPOSITS_FILE" ]]; then
+        error "Файл вкладов не найден"
+        return 1
+    fi
+
+    local deposits_json
+    deposits_json=$(jq -r '.deposits[] | "\(.name)|\(.bank)|\(.id)"' "$DEPOSITS_FILE")
+
+    if [[ -z "$deposits_json" ]]; then
+        error "Нет доступных вкладов"
+        return 1
+    fi
+
+    local total_income=0
+    local deposit_count=0
+
+    echo ""
+    echo "Расчет дохода по каждому вкладу:"
+    echo "----------------------------------------"
+
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            deposit_name=$(echo "$line" | cut -d'|' -f1)
+            deposit_bank=$(echo "$line" | cut -d'|' -f2)
+            deposit_id=$(echo "$line" | cut -d'|' -f3)
+
+            echo -n "  $deposit_name ($deposit_bank): "
+
+            local output
+            output=$(deposit-manager calculate "$deposit_id" "$days" 2>&1)
+            local result
+            result=$(extract_income_from_output "$output")
+
+            if [[ -n "$result" && "$result" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+                echo "$result руб."
+                total_income=$(echo "$total_income + $result" | bc -l 2>/dev/null || echo "0")
+                ((deposit_count++))
+            else
+                echo "ошибка расчета"
+            fi
+        fi
+    done <<<"$deposits_json"
+
+    echo "----------------------------------------"
+    if [[ $deposit_count -gt 0 ]]; then
+        printf "ИТОГО: %d вкладов, общий доход: %.2f руб.\n" "$deposit_count" "$total_income"
+    else
+        echo "Не удалось рассчитать доход по вкладам"
+    fi
+}
+
+create_new_deposit_interactive() {
+    echo "=========================================="
+    echo "Создание нового вклада"
+    echo "=========================================="
 
     while true; do
         read -p "Введите название вклада: " name
@@ -347,199 +352,150 @@ add_or_update_deposit() {
         fi
     done
 
+    bank="Yandex"
+    echo "Банк: $bank (автоматически)"
+
+    echo ""
+    echo "Типы вкладов:"
+    echo "1) savings - Бессрочный (с возможностью пополнения)"
+    echo "2) term - Срочный (фиксированный срок)"
+
     while true; do
-        read -p "Введите название банка: " bank
-        if [[ -n "$bank" ]]; then
+        read -p "Выберите тип вклада [1 или 2]: " type_choice
+        case $type_choice in
+        1)
+            deposit_type="savings"
+            break
+            ;;
+        2)
+            deposit_type="term"
+            break
+            ;;
+        *)
+            error "Введите 1 или 2"
+            ;;
+        esac
+    done
+
+    while true; do
+        read -p "Введите сумму вклада в рублях: " amount
+        if [[ $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && (($(echo "$amount > 0" | bc -l))); then
             break
         else
-            error "Название банка не может быть пустым"
+            error "Некорректная сумма. Пример: 50000 или 1500.50"
         fi
     done
 
-    local deposit_exists=false
-    if check_deposit_exists "$name" "$bank"; then
-        deposit_exists=true
-        info "Вклад '$name' в банке '$bank' уже существует"
+    while true; do
+        read -p "Введите процентную ставку (например: 17.5): " rate
+        if [[ $rate =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && (($(echo "$rate > 0" | bc -l))); then
+            break
+        else
+            error "Некорректная ставка. Пример: 17.5 или 8.25"
+        fi
+    done
 
-        local existing_id=$(get_deposit_id "$name" "$bank")
-        info "ID вклада: $existing_id"
-
+    local term=""
+    if [[ "$deposit_type" == "term" ]]; then
         echo ""
-        echo "Выберите действие:"
-        echo "1) Пополнить существующий вклад"
-        echo "2) Создать новый вклад (с другим ID)"
+        echo "Срок вклада:"
+        echo "1) 3 месяца (91 день)"
+        echo "2) 6 месяцев (181 день)"
+        echo "3) 1 год (367 дней)"
+        echo "4) 2 года (730 дней)"
 
         while true; do
-            read -p "Ваш выбор [1 или 2]: " choice
-            case $choice in
+            read -p "Выберите срок вклада [1-4]: " term_choice
+            case $term_choice in
             1)
-                while true; do
-                    read -p "Введите сумму для пополнения: " amount
-                    if [[ $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && [[ $(echo "$amount > 0" | bc -l) -eq 1 ]]; then
-                        break
-                    else
-                        error "Некорректная сумма. Пример: 50000 или 1500.50"
-                    fi
-                done
-
-                topup_existing_deposit "$name" "$bank" "$amount"
-                return $?
-                ;;
-            2)
-                deposit_exists=false
+                term=3
                 break
                 ;;
-            *)
-                error "Введите 1 или 2"
+            2)
+                term=6
+                break
                 ;;
+            3)
+                term=12
+                break
+                ;;
+            4)
+                term=24
+                break
+                ;;
+            *) error "Введите число от 1 до 4" ;;
             esac
         done
     fi
 
-    if [[ "$deposit_exists" == false ]]; then
-        echo ""
-        echo "Типы вкладов:"
-        echo "1) savings - Бессрочный (с возможностью пополнения)"
-        echo "2) term - Срочный (фиксированный срок)"
+    local command="deposit-manager create --name \"$name\" --bank \"$bank\" --type \"$deposit_type\" --amount \"$amount\" --rate \"$rate\""
 
-        while true; do
-            read -p "Выберите тип вклада [1 или 2]: " type_choice
-            case $type_choice in
-            1)
-                deposit_type="savings"
-                break
-                ;;
-            2)
-                deposit_type="term"
-                break
-                ;;
-            *)
-                error "Введите 1 или 2"
-                ;;
-            esac
-        done
-
-        while true; do
-            read -p "Введите сумму вклада в рублях: " amount
-            if [[ $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && [[ $(echo "$amount > 0" | bc -l) -eq 1 ]]; then
-                break
-            else
-                error "Некорректная сумма. Пример: 50000 или 1500.50"
-            fi
-        done
-
-        while true; do
-            read -p "Введите процентную ставку (например: 17.5): " rate
-            if [[ $rate =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && [[ $(echo "$rate > 0" | bc -l) -eq 1 ]]; then
-                break
-            else
-                error "Некорректная ставка. Пример: 17.5 или 8.25"
-            fi
-        done
-
-        local term=""
-        if [[ "$deposit_type" == "term" ]]; then
-            while true; do
-                read -p "Введите срок вклада в месяцах: " term
-                if [[ $term =~ ^[0-9]+$ ]] && [[ $term -gt 0 ]]; then
-                    break
-                else
-                    error "Введите положительное целое число"
-                fi
-            done
-        fi
-
-        echo ""
-        echo "Дополнительные опции:"
-        echo "1) Стандартные настройки"
-        echo "2) Настроить дополнительные параметры"
-
-        read -p "Ваш выбор [1 или 2]: " advanced_choice
-        if [[ "$advanced_choice" == "2" ]]; then
-            echo ""
-            echo "Тип капитализации:"
-            echo "1) daily - Ежедневная"
-            echo "2) monthly - Ежемесячная"
-            echo "3) end - В конце срока"
-
-            read -p "Выберите тип капитализации [1-3]: " cap_choice
-            case $cap_choice in
-            1) capitalization="daily" ;;
-            2) capitalization="monthly" ;;
-            3) capitalization="end" ;;
-            *) capitalization="daily" ;;
-            esac
-
-            read -p "Включить автопролонгацию? [y/N]: " auto_renewal
-            if [[ $auto_renewal =~ ^[Yy]$ ]]; then
-                auto_renewal_flag="--auto-renewal"
-            else
-                auto_renewal_flag=""
-            fi
-
-            read -p "Есть ли промо-ставка? [y/N]: " has_promo_rate
-            if [[ $has_promo_rate =~ ^[Yy]$ ]]; then
-                while true; do
-                    read -p "Введите промо-ставку: " promo_rate_value
-                    if [[ $promo_rate_value =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && [[ $(echo "$promo_rate_value > 0" | bc -l) -eq 1 ]]; then
-                        break
-                    else
-                        error "Некорректная промо-ставка. Пример: 17.5 или 8.25"
-                    fi
-                done
-
-                while true; do
-                    read -p "Введите дату окончания промо-ставки (ГГГГ-ММ-ДД): " promo_end_date
-                    if date -d "$promo_end_date" >/dev/null 2>&1; then
-                        break
-                    else
-                        error "Некорректная дата. Используйте формат ГГГГ-ММ-ДД"
-                    fi
-                done
-            fi
-        fi
-
-        echo ""
-        echo "=========================================="
-        echo "Проверьте введенные данные:"
-        echo "=========================================="
-        echo "Название: $name"
-        echo "Банк: $bank"
-        echo "Тип: $deposit_type"
-        echo "Сумма: $amount руб."
-        echo "Ставка: $rate%"
-        if [[ "$deposit_type" == "term" ]]; then
-            echo "Срок: $term месяцев"
-        fi
-        if [[ -n "$promo_rate_value" ]]; then
-            echo "Промо-ставка: $promo_rate_value% (до $promo_end_date)"
-        fi
-        if [[ -n "$capitalization" ]]; then
-            echo "Капитализация: $capitalization"
-        fi
-        if [[ -n "$auto_renewal_flag" ]]; then
-            echo "Автопролонгация: включена"
-        fi
-        echo "=========================================="
-
-        while true; do
-            read -p "Создать вклад? [y/N]: " confirm
-            case $confirm in
-            [Yy]*)
-                create_new_deposit "$name" "$bank" "$deposit_type" "$amount" "$rate" "$term" "$promo_rate_value" "$promo_end_date"
-                break
-                ;;
-            [Nn]*)
-                echo "Отмена создания вклада"
-                exit 0
-                ;;
-            *)
-                echo "Отмена создания вклада"
-                exit 0
-                ;;
-            esac
-        done
+    if [[ "$deposit_type" == "term" && -n "$term" ]]; then
+        command="$command --term \"$term\""
     fi
+
+    echo ""
+    echo "Выполняется команда: $command"
+    eval "$command"
+}
+
+topup_deposit_interactive() {
+    echo "=========================================="
+    echo "Пополнение вклада"
+    echo "=========================================="
+
+    show_existing_deposits
+    echo ""
+
+    local deposits_json
+    if [[ -f "$DEPOSITS_FILE" ]]; then
+        deposits_json=$(jq -r '.deposits[] | "\(.name)|\(.bank)|\(.id)"' "$DEPOSITS_FILE")
+    else
+        error "Файл вкладов не найден"
+        return 1
+    fi
+
+    if [[ -z "$deposits_json" ]]; then
+        error "Нет доступных вкладов"
+        return 1
+    fi
+
+    local i=1
+    local deposits=()
+    while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+            deposits[i]="$line"
+            local name=$(echo "$line" | cut -d'|' -f1)
+            local bank=$(echo "$line" | cut -d'|' -f2)
+            echo "  $i) $name ($bank)"
+            ((i++))
+        fi
+    done <<<"$deposits_json"
+
+    while true; do
+        read -p "Выберите вклад для пополнения [1-$((i - 1))]: " choice
+        if [[ $choice =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le $((i - 1)) ]]; then
+            selected="${deposits[$choice]}"
+            deposit_name=$(echo "$selected" | cut -d'|' -f1)
+            deposit_bank=$(echo "$selected" | cut -d'|' -f2)
+            deposit_id=$(echo "$selected" | cut -d'|' -f3)
+            break
+        else
+            error "Введите число от 1 до $((i - 1))"
+        fi
+    done
+
+    while true; do
+        read -p "Введите сумму для пополнения: " amount
+        if [[ $amount =~ ^[0-9]+(\.[0-9]{1,2})?$ ]] && (($(echo "$amount > 0" | bc -l))); then
+            break
+        else
+            error "Некорректная сумма. Пример: 50000 или 1500.50"
+        fi
+    done
+
+    log "Пополнение вклада '$deposit_name' на $amount руб."
+    deposit-manager topup "$deposit_id" "$amount"
 }
 
 update_deposit_rate_interactive() {
@@ -578,10 +534,10 @@ update_deposit_rate_interactive() {
     done
 
     log "Поиск вклада '$name' в банке '$bank'..."
-    deposit_info=$(deposit-manager find "$name" "$bank" 2>/dev/null)
 
-    if ! echo "$deposits_list" | grep -q "$name.*$bank"; then
-        error "Вклад '$name' в банке '$bank' не найден"
+    # Получаем информацию о вкладе из файла
+    if [[ ! -f "$DEPOSITS_FILE" ]]; then
+        error "Файл вкладов не найден: $DEPOSITS_FILE"
         return 1
     fi
 
@@ -589,7 +545,7 @@ update_deposit_rate_interactive() {
     deposit_json=$(jq -r --arg name "$name" --arg bank "$bank" '.deposits[] | select(.name == $name and .bank == $bank)' "$DEPOSITS_FILE" 2>/dev/null)
 
     if [[ -z "$deposit_json" || "$deposit_json" == "null" ]]; then
-        error "Не удалось получить данные вклада"
+        error "Вклад '$name' в банке '$bank' не найден"
         return 1
     fi
 
@@ -728,25 +684,6 @@ update_deposit_rate_interactive() {
         return 1
     fi
 }
-accrue_interest_auto() {
-    echo "=========================================="
-    echo "Автоматическое начисление процентов"
-    echo "=========================================="
-
-    log "Запуск автоматического начисления процентов..."
-
-    deposit-manager accrue-interest
-
-    local result=$?
-
-    if [[ $result -eq 0 ]]; then
-        log "Автоматическое начисление процентов завершено"
-    else
-        error "Ошибка при автоматическом начислении процентов"
-    fi
-
-    return $result
-}
 
 main_menu() {
     echo "=========================================="
@@ -754,38 +691,15 @@ main_menu() {
     echo "=========================================="
     echo ""
     echo "Выберите действие:"
-    echo "1) Добавить новый вклад или пополнить существующий"
+    echo "1) Создать новый вклад"
     echo "2) Просмотреть список вкладов"
-    echo "3) Проверить уведомления"
-    echo "4) Рассчитать доход"
-    echo "5) Обновить ставку по вкладу"
-    echo "6) Выход"
+    echo "3) Рассчитать доход по выбранному вкладу до даты"
+    echo "4) Рассчитать общий доход по всем вкладам до даты"
+    echo "5) Рассчитать доход за весь срок по срочным вкладам"
+    echo "6) Пополнить существующий вклад"
+    echo "7) Обновить ставку по вкладу"
+    echo "0) Выход"
     echo ""
-}
-
-show_existing_deposits() {
-    echo "=========================================="
-    echo "Существующие вклады:"
-    echo "=========================================="
-
-    if [[ -f "$DEPOSITS_FILE" ]]; then
-        jq -r '.deposits[] | "\(.id) | \(.name) | \(.bank) | \(.amount / 100) руб."' "$DEPOSITS_FILE" 2>/dev/null ||
-            echo "Ошибка чтения файла вкладов"
-    else
-        echo "Файл вкладов не найден: $DEPOSITS_FILE"
-    fi
-}
-
-check_dependencies() {
-    if ! command -v deposit-manager &>/dev/null; then
-        error "deposit-manager не найден. Убедитесь, что он установлен и доступен в PATH"
-        exit 1
-    fi
-
-    if ! command -v bc &>/dev/null; then
-        error "Утилита bc не найдена. Установите её: sudo apt-get install bc"
-        exit 1
-    fi
 }
 
 main() {
@@ -793,27 +707,32 @@ main() {
 
     while true; do
         main_menu
-        read -p "Ваш выбор [1-9]: " choice
+        read -p "Ваш выбор [0-9]: " choice
 
         case $choice in
         1)
-            add_or_update_deposit
+            create_new_deposit_interactive
             ;;
         2)
             echo ""
-            deposit-manager list
+            show_existing_deposits
             ;;
         3)
-            echo ""
-            deposit-manager notifications
+            calculate_single_deposit_income
             ;;
         4)
-            calculate_income_interactive
+            calculate_all_deposits_income
             ;;
         5)
-            update_deposit_rate_interactive
+            calculate_total_term_income
             ;;
         6)
+            topup_deposit_interactive
+            ;;
+        7)
+            update_deposit_rate_interactive
+            ;;
+        0)
             echo "Выход..."
             exit 0
             ;;
@@ -828,73 +747,41 @@ main() {
 }
 
 case "${1:-}" in
-"add" | "create")
-    add_or_update_deposit
+"create")
+    create_new_deposit_interactive
     ;;
 "list")
-    deposit-manager list
-    ;;
-"list-ids")
     show_existing_deposits
     ;;
-"find")
-    if [[ $# -ge 3 ]]; then
-        find_deposit_id "$2" "$3"
-    else
-        error "Использование: $0 find <name> <bank>"
-        exit 1
-    fi
+"calculate-single")
+    calculate_single_deposit_income
     ;;
-"notifications")
-    deposit-manager notifications
+"calculate-all")
+    calculate_all_deposits_income
+    ;;
+"calculate-term")
+    calculate_total_term_income
     ;;
 "topup")
-    if [[ $# -ge 3 ]]; then
-        deposit-manager topup "$2" "$3"
-    else
-        error "Использование: $0 topup <deposit_id> <amount>"
-        exit 1
-    fi
-    ;;
-"calculate")
-    if [[ $# -ge 3 ]]; then
-        deposit-manager calculate "$2" "$3"
-    else
-        calculate_income_interactive
-    fi
-    ;;
-"accrue-interest")
-    accrue_interest_auto
+    topup_deposit_interactive
     ;;
 "update-rate")
     update_deposit_rate_interactive
-    ;;
-"ledger-path")
-    echo "Файл ledger: $LEDGER_PATH"
-    if [[ -f "$LEDGER_PATH" ]]; then
-        echo "Последние записи:"
-        tail -10 "$LEDGER_PATH"
-    else
-        echo "Файл не существует"
-    fi
     ;;
 "help" | "-h" | "--help")
     echo "Использование: $0 [command]"
     echo ""
     echo "Команды:"
-    echo "  add, create    - Интерактивное добавление/обновление вклада"
-    echo "  list           - Показать список вкладов"
-    echo "  notifications  - Проверить уведомления"
-    echo "  topup <id> <amount> - Пополнить вклад"
-    echo "  calculate      - Рассчитать доход (интерактивно)"
-    echo "  calculate <id> <days> - Рассчитать доход по ID"
-    echo "  update-rate    - Обновить ставку по вкладу"
-    echo "  ledger-path    - Показать путь и последние записи ledger"
-    echo "  help           - Показать эту справку"
+    echo "  create           - Создать новый вклад"
+    echo "  list             - Показать список вкладов"
+    echo "  calculate-single - Рассчитать доход по вкладу до даты"
+    echo "  calculate-all    - Рассчитать общий доход по всем вкладам"
+    echo "  calculate-term   - Рассчитать доход за весь срок по срочным вкладам"
+    echo "  topup            - Пополнить существующий вклад"
+    echo "  update-rate      - Обновить ставку по вкладу"
+    echo "  help             - Показать эту справку"
     echo ""
     echo "Без аргументов - интерактивный режим"
-    echo ""
-    echo "Ledger: $LEDGER_PATH"
     ;;
 *)
     if [[ -z "$1" ]]; then

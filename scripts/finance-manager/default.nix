@@ -2,7 +2,7 @@
 
 pkgs.buildGoModule {
   pname = "finance-manager";
-  version = "0.6.0";
+  version = "0.6.3";
 
   src = ./.;
 

@@ -5,11 +5,12 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/sunriseex/finance-manager/internal/config"
 	"github.com/sunriseex/finance-manager/internal/models"
 	"github.com/sunriseex/finance-manager/internal/storage"
 	"github.com/sunriseex/finance-manager/pkg/calculator"
-	"github.com/sunriseex/finance-manager/pkg/dates"
 	"github.com/sunriseex/finance-manager/pkg/errors"
 )
 
@@ -25,14 +26,14 @@ type AccrueInterestRequest struct {
 type AccrualResult struct {
 	DepositID   string
 	DepositName string
-	Income      float64
+	Income      decimal.Decimal
 	Success     bool
 	Error       error
 }
 
 type AccrueInterestResponse struct {
 	Success      bool
-	TotalAccrued float64
+	TotalAccrued decimal.Decimal
 	SuccessCount int
 	ErrorCount   int
 	Results      []AccrualResult
@@ -54,7 +55,8 @@ func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInt
 	slog.Debug("Загружено вкладов для зачисления", "count", len(data.Deposits))
 
 	response := &AccrueInterestResponse{
-		Results: make([]AccrualResult, 0),
+		Results:      make([]AccrualResult, 0),
+		TotalAccrued: decimal.Zero,
 	}
 
 	for _, deposit := range data.Deposits {
@@ -62,7 +64,7 @@ func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInt
 		response.Results = append(response.Results, result)
 
 		if result.Success {
-			response.TotalAccrued += result.Income
+			response.TotalAccrued = response.TotalAccrued.Add(result.Income)
 			response.SuccessCount++
 			slog.Debug("Проценты начислены успешно",
 				"deposit", deposit.Name,
@@ -76,11 +78,13 @@ func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInt
 	}
 
 	response.Success = response.ErrorCount == 0
+
+	totalAccruedFloat, _ := response.TotalAccrued.Round(2).Float64()
 	if response.SuccessCount > 0 {
-		response.Message = fmt.Sprintf("Начислено процентов: %.2f руб. по %d вкладам", response.TotalAccrued, response.SuccessCount)
+		response.Message = fmt.Sprintf("Начислено процентов: %.2f руб. по %d вкладам", totalAccruedFloat, response.SuccessCount)
 
 		slog.Info("Начисление процентов завершено успешно",
-			"total_accrued", response.TotalAccrued,
+			"total_accrued", totalAccruedFloat,
 			"success_count", response.SuccessCount)
 
 	} else {
@@ -93,19 +97,29 @@ func (s *InterestService) AccrueInterest(req *AccrueInterestRequest) (*AccrueInt
 
 func (s *InterestService) processDepositAccrual(deposit models.Deposit) AccrualResult {
 	income, description := s.calculateDailyInterest(deposit)
-	if income <= 0 {
+	if income.IsZero() || description == "" {
 		return AccrualResult{
 			DepositID:   deposit.ID,
 			DepositName: deposit.Name,
-			Income:      0,
-			Success:     false,
-			Error:       errors.NewBusinessLogicError("нет дохода для начисления", nil),
+			Income:      decimal.Zero,
+			Success:     true,
+			Error:       nil,
 		}
 	}
 
-	amountKopecks := int(income * 100)
+	amountKopecks := income.Mul(decimal.NewFromInt(100)).IntPart()
 
-	if err := storage.RecordDepositToLedger(deposit, "interest", amountKopecks, description, config.AppConfig.LedgerPath); err != nil {
+	if amountKopecks <= 0 {
+		return AccrualResult{
+			DepositID:   deposit.ID,
+			DepositName: deposit.Name,
+			Income:      income,
+			Success:     true,
+			Error:       nil,
+		}
+	}
+
+	if err := storage.RecordDepositToLedger(deposit, "interest", int(amountKopecks), description, config.AppConfig.LedgerPath); err != nil {
 		return AccrualResult{
 			DepositID:   deposit.ID,
 			DepositName: deposit.Name,
@@ -119,7 +133,7 @@ func (s *InterestService) processDepositAccrual(deposit models.Deposit) AccrualR
 		}
 	}
 
-	if err := storage.UpdateDepositAmount(deposit.ID, amountKopecks, config.AppConfig.DepositsDataPath); err != nil {
+	if err := storage.UpdateDepositAmount(deposit.ID, int(amountKopecks), config.AppConfig.DepositsDataPath); err != nil {
 		return AccrualResult{
 			DepositID:   deposit.ID,
 			DepositName: deposit.Name,
@@ -142,23 +156,16 @@ func (s *InterestService) processDepositAccrual(deposit models.Deposit) AccrualR
 	}
 }
 
-func (s *InterestService) calculateDailyInterest(deposit models.Deposit) (float64, string) {
+func (s *InterestService) calculateDailyInterest(deposit models.Deposit) (decimal.Decimal, string) {
 	switch deposit.Type {
 	case "savings":
 		income := calculator.CalculateIncome(deposit, 1)
-		incomeFloat, _ := income.Float64()
-		return incomeFloat, "Ежедневная выплата процентов"
+		return income, "Ежедневная выплата процентов"
 	case "term":
-		if dates.IsDepositExpired(deposit.EndDate) {
-			daysPassed := s.daysSince(deposit.StartDate)
-			if daysPassed > 0 {
-				income := calculator.CalculateIncome(deposit, daysPassed)
-				incomeFloat, _ := income.Float64()
-				return incomeFloat, "Выплата процентов по окончании срока"
-			}
-		}
+		return decimal.Zero, ""
+	default:
+		return decimal.Zero, ""
 	}
-	return 0, ""
 }
 
 func (s *InterestService) daysSince(startDate string) int {

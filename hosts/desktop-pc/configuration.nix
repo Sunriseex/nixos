@@ -127,5 +127,16 @@
     allowReboot = false;
   };
 
+  fileSystems."/mnt/data" = {
+    device = "/dev/disk/by-uuid/39300D621B85831C";
+    fsType = "ntfs";
+    options = [
+      "rw"
+      "uid=1000"
+      "gid=100"
+      "umask=0022"
+    ];
+  };
+
   system.stateVersion = "25.05"; # Do not change
 }

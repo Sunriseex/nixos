@@ -6,6 +6,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/sunriseex/finance-manager/internal/models"
+	"github.com/sunriseex/finance-manager/pkg/dates"
 )
 
 func CalculateIncome(deposit models.Deposit, days int) decimal.Decimal {
@@ -14,24 +15,74 @@ func CalculateIncome(deposit models.Deposit, days int) decimal.Decimal {
 	}
 
 	amount := decimal.NewFromInt(int64(deposit.Amount)).Div(decimal.NewFromInt(100))
-	effectiveRate := getEffectiveRateDecimal(deposit)
 
+	if deposit.Type == "term" && deposit.StartDate != "" && deposit.EndDate != "" {
+		totalDays, err := dates.DaysBetween(deposit.StartDate, deposit.EndDate)
+		if err == nil && days == totalDays {
+			return calculateTermDepositTotalIncome(deposit, amount, days)
+		}
+	}
+
+	return calculateStandardIncome(deposit, amount, days)
+}
+
+func calculateTermDepositTotalIncome(deposit models.Deposit, amount decimal.Decimal, totalDays int) decimal.Decimal {
+	effectiveRate := getEffectiveRateForTerm(deposit, totalDays)
+
+	if deposit.Bank == "Yandex" {
+		return calculateEndTerm(amount, effectiveRate, totalDays)
+	}
+
+	return calculateByCapitalization(amount, effectiveRate, totalDays, deposit.Capitalization)
+}
+
+func getEffectiveRateForTerm(deposit models.Deposit, totalDays int) decimal.Decimal {
+	if deposit.PromoRate != nil && isPromoActiveForTerm(deposit, totalDays) {
+		return decimal.NewFromFloat(*deposit.PromoRate)
+	}
+
+	return decimal.NewFromFloat(deposit.InterestRate)
+}
+
+func isPromoActiveForTerm(deposit models.Deposit, totalDays int) bool {
+	if deposit.PromoRate == nil || deposit.PromoEndDate == "" || deposit.StartDate == "" {
+		return false
+	}
+
+	startDate, err := time.Parse("2006-01-02", deposit.StartDate)
+	if err != nil {
+		return false
+	}
+
+	promoEnd, err := time.Parse("2006-01-02", deposit.PromoEndDate)
+	if err != nil {
+		return false
+	}
+
+	endDate := startDate.AddDate(0, 0, totalDays)
+
+	return !promoEnd.Before(endDate)
+}
+
+func calculateStandardIncome(deposit models.Deposit, amount decimal.Decimal, days int) decimal.Decimal {
 	active, daysUntilPromoEnd := CheckPromoStatus(deposit)
 
-	if active && daysUntilPromoEnd > 0 && days > daysUntilPromoEnd {
-		return calculateIncomeWithPromoTransition(deposit, amount, days, daysUntilPromoEnd)
+	if active && deposit.PromoRate != nil && daysUntilPromoEnd > 0 {
+		if days > daysUntilPromoEnd {
+			return calculateIncomeWithPromoTransition(deposit, amount, days, daysUntilPromoEnd)
+		}
+		return calculateByBankMethod(amount, decimal.NewFromFloat(*deposit.PromoRate), days, deposit)
 	}
 
-	switch deposit.Capitalization {
-	case "daily":
-		return calculateDailyCapitalization(amount, effectiveRate, days)
-	case "monthly":
-		return calculateMonthlyCapitalization(amount, effectiveRate, days)
-	case "end":
-		return calculateEndTerm(amount, effectiveRate, days)
-	default:
-		return calculateEndTerm(amount, effectiveRate, days)
+	return calculateByBankMethod(amount, decimal.NewFromFloat(deposit.InterestRate), days, deposit)
+}
+
+func calculateByBankMethod(amount, rate decimal.Decimal, days int, deposit models.Deposit) decimal.Decimal {
+	if deposit.Bank == "Yandex" {
+		return calculateEndTerm(amount, rate, days)
 	}
+
+	return calculateByCapitalization(amount, rate, days, deposit.Capitalization)
 }
 
 func CheckPromoStatus(deposit models.Deposit) (bool, int) {
@@ -44,10 +95,13 @@ func CheckPromoStatus(deposit models.Deposit) (bool, int) {
 		return false, 0
 	}
 
-	promoEnd = promoEnd.AddDate(0, 0, 1)
-	daysUntilEnd := int(promoEnd.Sub(time.Now()).Hours() / 24)
+	today := time.Now()
+	today = time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	promoEnd = time.Date(promoEnd.Year(), promoEnd.Month(), promoEnd.Day(), 0, 0, 0, 0, time.UTC)
 
-	return daysUntilEnd > 0, daysUntilEnd
+	daysUntilEnd := int(promoEnd.Sub(today).Hours() / 24)
+
+	return daysUntilEnd >= 0, daysUntilEnd
 }
 
 func CalculateTotalTermIncome(deposit models.Deposit) decimal.Decimal {
@@ -77,24 +131,17 @@ func calculateIncomeWithPromoTransition(deposit models.Deposit, amount decimal.D
 	var incomePromo decimal.Decimal
 
 	if deposit.PromoRate != nil {
-
 		promoRate := decimal.NewFromFloat(*deposit.PromoRate)
-		incomePromo = calculateByCapitalization(amount, promoRate, promoDaysRemaining, deposit.Capitalization)
-
+		incomePromo = calculateByBankMethod(amount, promoRate, promoDaysRemaining, deposit)
 	} else {
-
 		incomePromo = decimal.Zero
-
 	}
+
 	amountAfterPromo := amount.Add(incomePromo)
-
 	remainingDays := totalDays - promoDaysRemaining
-
 	baseRate := decimal.NewFromFloat(deposit.InterestRate)
 
-	var incomeRemaining decimal.Decimal
-
-	incomeRemaining = calculateByCapitalization(amountAfterPromo, baseRate, remainingDays, deposit.Capitalization)
+	incomeRemaining := calculateByBankMethod(amountAfterPromo, baseRate, remainingDays, deposit)
 
 	return incomePromo.Add(incomeRemaining)
 }
@@ -146,15 +193,4 @@ func calculateEndTerm(amount, rate decimal.Decimal, days int) decimal.Decimal {
 	result = result.Mul(daysDecimal).Div(daysInYear)
 
 	return result
-}
-
-func getEffectiveRateDecimal(deposit models.Deposit) decimal.Decimal {
-	if deposit.PromoRate == nil || deposit.PromoEndDate == "" {
-		return decimal.NewFromFloat(deposit.InterestRate)
-	}
-	active, _ := CheckPromoStatus(deposit)
-	if active {
-		return decimal.NewFromFloat(*deposit.PromoRate)
-	}
-	return decimal.NewFromFloat(deposit.InterestRate)
 }

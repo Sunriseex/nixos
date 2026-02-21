@@ -9,11 +9,30 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
-    sddm-sugar-candy-nix.url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
-    nvf.url = "github:notashelf/nvf";
-    nix-flatpak.url = "github:gmodena/nix-flatpak/latest";
-    agenix.url = "github:ryantm/agenix";
+    nixos-grub-themes = {
+      url = "github:jeslie0/nixos-grub-themes";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    sddm-sugar-candy-nix = {
+      url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nvf = {
+      url = "github:notashelf/nvf";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-flatpak = {
+      url = "github:gmodena/nix-flatpak/latest";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -35,7 +54,6 @@
             ./hosts/desktop-pc/configuration.nix
           ];
         };
-
       };
     };
 }
