@@ -72,7 +72,7 @@ func DepositList() error {
 		fmt.Printf("   Сумма: %.2f руб.\n", amountRubles)
 
 		active, daysLeft := services.CheckPromoStatus(deposit)
-		if active {
+		if active && deposit.PromoRate != nil {
 			fmt.Printf("   Промо-ставка: %.2f%% (до %s, осталось %d дн.)\n",
 				*deposit.PromoRate, deposit.PromoEndDate, daysLeft)
 		} else {
@@ -80,16 +80,36 @@ func DepositList() error {
 		}
 
 		fmt.Printf("   Тип: %s\n", deposit.Type)
+		fmt.Printf("   Дата начала: %s\n", deposit.StartDate)
 
-		incomeReq := &services.CalculateIncomeRequest{
+		incomeReq30 := &services.CalculateIncomeRequest{
 			DepositID: deposit.ID,
 			Days:      30,
 		}
-		incomeResp, err := service.CalculateIncome(incomeReq)
+		incomeResp30, err := service.CalculateIncome(incomeReq30)
 		if err == nil {
-			fmt.Printf("   Доход в месяц: ~%.2f руб.\n", incomeResp.ExpectedIncome)
+			fmt.Printf("   Доход в месяц: ~%.2f руб.\n", incomeResp30.ExpectedIncome)
 		} else {
 			fmt.Printf("   Доход в месяц: расчет недоступен\n")
+		}
+
+		if deposit.Type == "term" && deposit.StartDate != "" && deposit.EndDate != "" {
+			totalDays, err := dates.DaysBetween(deposit.StartDate, deposit.EndDate)
+			if err == nil && totalDays > 0 {
+				incomeReqTotal := &services.CalculateIncomeRequest{
+					DepositID: deposit.ID,
+					Days:      totalDays,
+				}
+				incomeRespTotal, err := service.CalculateIncome(incomeReqTotal)
+				if err == nil {
+					fmt.Printf("   Доход за весь срок (%d дн.): ~%.2f руб.\n",
+						totalDays, incomeRespTotal.ExpectedIncome)
+
+					totalAmount := amountRubles + incomeRespTotal.ExpectedIncome
+					fmt.Printf("   Общая сумма к концу срока: ~%.2f руб.\n", totalAmount)
+
+				}
+			}
 		}
 		fmt.Println()
 	}

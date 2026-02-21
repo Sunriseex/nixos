@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
 log() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')]${NC} $1"
 }
@@ -8,21 +13,20 @@ error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
-warn() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
 info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-# Логируем запуск
-info "$(date): Запуск автоматического начисления процентов"
+info "Запуск автоматического начисления процентов"
 
-# Выполняем начисление
-if "/home/snrx/nixos/scripts/finance-manager/scripts/deposit-interactive.sh" accrue-interest; then
-    info "$(date): Начисление процентов завершено успешно"
+if command -v deposit-manager &>/dev/null; then
+    if deposit-manager accrue-interest; then
+        info "Начисление процентов завершено успешно"
+    else
+        error "Ошибка при начислении процентов (код: $?)"
+        exit 1
+    fi
 else
-    error "$(date): Ошибка при начислении процентов (код: $?)"
+    error "deposit-manager не найден в PATH"
     exit 1
 fi

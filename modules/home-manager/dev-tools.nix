@@ -25,5 +25,6 @@
     docker
     nix-prefetch
     nix-prefetch-github
+    codex
   ];
 }

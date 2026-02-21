@@ -21,6 +21,7 @@
     ./desktop/waybar.nix
     ./desktop/wlogout.nix
     # Apps
+    # ./apps/discord.nix
     ./apps/firefox.nix
     ./apps/librewolf.nix
     # Development
