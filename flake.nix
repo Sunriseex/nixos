@@ -14,8 +14,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    sddm-sugar-candy-nix = {
-      url = "gitlab:Zhaith-Izaliel/sddm-sugar-candy-nix";
+    silent-sddm = {
+      url = "github:uiriansan/SilentSDDM";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -41,8 +41,8 @@
       nixpkgs,
       home-manager,
       nvf,
-      sddm-sugar-candy-nix,
       nix-flatpak,
+      silent-sddm,
       agenix,
       ...
     }@inputs:

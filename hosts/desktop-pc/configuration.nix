@@ -12,9 +12,9 @@
     ./system-modules/scheduled-tasks.nix
     inputs.home-manager.nixosModules.default
     inputs.nvf.nixosModules.default
-    inputs.sddm-sugar-candy-nix.nixosModules.default
     inputs.nix-flatpak.nixosModules.nix-flatpak
     inputs.agenix.nixosModules.default
+    inputs.silent-sddm.nixosModules.default
   ];
   # Agenix
   age.identityPaths = [
