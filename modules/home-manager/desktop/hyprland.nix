@@ -243,9 +243,9 @@
 
       ### WINDOWS AND WORKSPACES
 
-      windowrulev2 = [
-        "suppressevent maximize, class:.*"
-        "nofocus,class:^$,title:^$,xwayland:1,floating:1,fullscreen:0,pinned:0 "
+      windowrule = [
+        "suppress_event maximize on, match:class .*"
+        "match:class ^$, match:title ^$, match:xwayland 1, match:float 1, match:fullscreen 0, match:pin 0, no_initial_focus true"
       ];
 
     };
