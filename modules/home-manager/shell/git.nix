@@ -3,15 +3,20 @@
 }:
 
 {
+  programs.diff-so-fancy = {
+    enable = true;
+    enableGitIntegration = true;
+  };
+
   programs.git = {
     enable = true;
-    diff-so-fancy.enable = true;
-    userName = "Sunriseex";
-    userEmail = "norealpwnz@gmail.com";
-    extraConfig = {
+    settings = {
+      user = {
+        name = "Sunriseex";
+        email = "norealpwnz@gmail.com";
+      };
       safe.directory = "/home/snrx/nixos";
       init.defaultBranch = "main";
-
     };
 
     signing = {

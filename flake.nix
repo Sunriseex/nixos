@@ -26,7 +26,6 @@
 
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/latest";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     agenix = {
