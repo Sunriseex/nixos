@@ -21,9 +21,6 @@
     "/etc/ssh/ssh_host_ed25519_key"
     "/etc/ssh/agenix_key"
   ];
-  # docker
-  virtualisation.docker.enable = true;
-
   # Enable Flakes
   nix.settings.experimental-features = [
     "nix-command"

@@ -1,4 +1,5 @@
 {
+  config,
   ...
 }:
 
@@ -15,7 +16,7 @@
         name = "Sunriseex";
         email = "norealpwnz@gmail.com";
       };
-      safe.directory = "/home/snrx/nixos";
+      safe.directory = "${config.home.homeDirectory}/nixos";
       init.defaultBranch = "main";
     };
 

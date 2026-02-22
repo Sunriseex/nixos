@@ -1,6 +1,7 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 let
   finance-manager = pkgs.callPackage ../../../scripts/finance-manager/default.nix { };
+  wavePlateIconPath = "${config.home.homeDirectory}/icons/wave-plate.png";
 in
 {
   home.file.".config/waybar/scripts/wave-plates.sh" = {
@@ -698,7 +699,7 @@ in
       }
 
       #custom-wave-plates {
-      background-image: url("/home/snrx/icons/wave-plate.png");
+      background-image: url("${wavePlateIconPath}");
       background-repeat: no-repeat;
       background-size: 24px 24px;
       background-position: left center;

@@ -1,8 +1,12 @@
 {
+  config,
   pkgs,
   ...
 }:
 let
+  serviceUser = "snrx";
+  serviceHome = config.users.users.${serviceUser}.home;
+  nixosRepoDir = "${serviceHome}/nixos";
   deposit-manager = import ../../../scripts/finance-manager/default.nix { inherit pkgs; };
 in
 {
@@ -10,15 +14,15 @@ in
     description = "Automatic interest accrual";
     serviceConfig = {
       Type = "oneshot";
-      User = "snrx";
-      WorkingDirectory = "/home/snrx";
-      ExecStart = "${pkgs.bash}/bin/bash /home/snrx/nixos/scripts/finance-manager/scripts/auto-accrue-interest.sh";
+      User = serviceUser;
+      WorkingDirectory = serviceHome;
+      ExecStart = "${pkgs.bash}/bin/bash ${nixosRepoDir}/scripts/finance-manager/scripts/auto-accrue-interest.sh";
       StandardOutput = "journal";
       StandardError = "journal";
     };
     environment = {
-      HOME = "/home/snrx";
-      USER = "snrx";
+      HOME = serviceHome;
+      USER = serviceUser;
     };
     path = with pkgs; [
       bash
