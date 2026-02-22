@@ -26,5 +26,6 @@
     nix-prefetch
     nix-prefetch-github
     codex
+    nodejs
   ];
 }

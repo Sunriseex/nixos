@@ -79,12 +79,6 @@
   # Fix SDDM not starting any DE session
   services.dbus.packages = with pkgs; [ dconf ];
 
-  # OpenRazer
-  hardware.openrazer = {
-    enable = true;
-    users = [ "snrx" ];
-  };
-
   environment.sessionVariables = {
     XDG_SESSION_TYPE = "wayland";
     XDG_CURRENT_DESKTOP = "Hyprland";
@@ -98,8 +92,6 @@
   environment.systemPackages = with pkgs; [
     home-manager
     inputs.agenix.packages.${pkgs.system}.default
-    openrazer-daemon
-    razer-cli
     nftables
     jq
 

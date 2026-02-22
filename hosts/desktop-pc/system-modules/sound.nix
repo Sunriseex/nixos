@@ -12,6 +12,4 @@
   services.pulseaudio = {
     enable = false;
   };
-
-  hardware.bluetooth.enable = true;
 }

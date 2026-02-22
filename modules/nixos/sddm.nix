@@ -7,15 +7,24 @@ let
     position=0,0
 
     [output]
-    name=DVI-D-1
+    name=HDMI-1
     mode=preferred
-    position=1920,0
+    position=0,0
+
+    [output]
+    name=DVI-D-1
+    mode=off
+
+    [output]
+    name=DVI-1
+    mode=off
   '';
 in
 {
   services.displayManager.sddm = {
     enable = true;
     wayland.enable = true;
+    wayland.compositor = "weston";
     package = pkgs.kdePackages.sddm;
     settings = {
       Wayland = {
