@@ -2,6 +2,14 @@
 let
   finance-manager = pkgs.callPackage ../../../scripts/finance-manager/default.nix { };
   wavePlateIconPath = "${config.home.homeDirectory}/icons/wave-plate.png";
+  primaryOutputs = [
+    "HDMI-A-1"
+    "HDMI-1"
+  ];
+  secondaryOutputs = [
+    "DVI-D-1"
+    "DVI-1"
+  ];
 in
 {
   home.file.".config/waybar/scripts/wave-plates.sh" = {
@@ -147,13 +155,26 @@ in
     executable = true;
     text = ''
       #!/bin/sh
-      API_KEY="af3ae71b2d4279e59e4f1c9a94057d64"
-      CITY="Moscow"
+      ENV_FILE="$HOME/.config/waybar/weather.env"
+      [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+
+      API_KEY="''${OPENWEATHER_API_KEY:-}"
+      CITY="''${OPENWEATHER_CITY:-Moscow}"
+
+      if [ -z "$API_KEY" ]; then
+        echo "🌡️ --°C"
+        exit 0
+      fi
+
       URL="https://api.openweathermap.org/data/2.5/weather?q=$CITY&appid=$API_KEY&units=metric&lang=ru"
 
       WEATHER_JSON=$(curl -s "$URL")
+      if ! echo "$WEATHER_JSON" | jq -e '.main.temp and .weather[0].icon' >/dev/null 2>&1; then
+        echo "🌡️ --°C"
+        exit 0
+      fi
+
       TEMP=$(echo "$WEATHER_JSON" | jq '.main.temp' | cut -d. -f1)
-      WEATHER_DESC=$(echo "$WEATHER_JSON" | jq -r '.weather[0].description')
       ICON_CODE=$(echo "$WEATHER_JSON" | jq -r '.weather[0].icon')
 
       get_icon() {
@@ -342,7 +363,7 @@ in
         position = "top";
         height = 50;
         spacing = 0;
-        output = "HDMI-A-1";
+        output = primaryOutputs;
 
         modules-left = [
           "hyprland/language"
@@ -450,7 +471,7 @@ in
         position = "top";
         height = 50;
         spacing = 0;
-        output = "DVI-D-1";
+        output = secondaryOutputs;
 
         modules-left = [
           "custom/payments"

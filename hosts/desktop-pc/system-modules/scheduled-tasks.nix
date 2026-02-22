@@ -6,7 +6,6 @@
 let
   serviceUser = "snrx";
   serviceHome = config.users.users.${serviceUser}.home;
-  nixosRepoDir = "${serviceHome}/nixos";
   deposit-manager = import ../../../scripts/finance-manager/default.nix { inherit pkgs; };
 in
 {
@@ -16,7 +15,7 @@ in
       Type = "oneshot";
       User = serviceUser;
       WorkingDirectory = serviceHome;
-      ExecStart = "${pkgs.bash}/bin/bash ${nixosRepoDir}/scripts/finance-manager/scripts/auto-accrue-interest.sh";
+      ExecStart = "${deposit-manager}/bin/deposit-manager accrue-interest";
       StandardOutput = "journal";
       StandardError = "journal";
     };

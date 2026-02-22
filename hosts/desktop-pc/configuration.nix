@@ -107,7 +107,7 @@
 
   system.autoUpgrade = {
     enable = true;
-    flake = "/home/snrx/nixos";
+    flake = "github:sunriseex/nixos#desktop-pc";
     flags = [
       "--update-input"
       "nixpkgs"

@@ -32,8 +32,19 @@
     };
 
     preStart = ''
-        ${pkgs.docker}/bin/docker pull ghcr.io/home-assistant/home-assistant:stable
+      image="ghcr.io/home-assistant/home-assistant:stable"
+
       mkdir -p /var/lib/homeassistant
+
+      # Make start idempotent even if stale container remained after a crash.
+      ${pkgs.docker}/bin/docker rm -f homeassistant >/dev/null 2>&1 || true
+
+      # Try to refresh image, but allow startup from cached image when offline.
+      if ! ${pkgs.docker}/bin/docker image inspect "$image" >/dev/null 2>&1; then
+        ${pkgs.docker}/bin/docker pull "$image"
+      else
+        ${pkgs.docker}/bin/docker pull "$image" >/dev/null 2>&1 || true
+      fi
     '';
     environment = {
       TZ = "Europe/Moscow"; # Укажите вашу временную зону
