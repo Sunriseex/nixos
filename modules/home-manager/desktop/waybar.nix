@@ -156,10 +156,31 @@ in
     text = ''
       #!/bin/sh
       ENV_FILE="$HOME/.config/waybar/weather.env"
-      [ -f "$ENV_FILE" ] && . "$ENV_FILE"
+      API_KEY=""
+      CITY="Moscow"
 
-      API_KEY="''${OPENWEATHER_API_KEY:-}"
-      CITY="''${OPENWEATHER_CITY:-Moscow}"
+      read_env_value() {
+        key="$1"
+        file="$2"
+        awk -F= -v k="$key" '
+          $0 ~ "^[[:space:]]*" k "=" {
+            sub(/^[[:space:]]*[^=]+=*/, "", $0)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", $0)
+            if ($0 ~ /^".*"$/) {
+              sub(/^"/, "", $0)
+              sub(/"$/, "", $0)
+            }
+            val = $0
+          }
+          END { if (val != "") print val }
+        ' "$file"
+      }
+
+      if [ -f "$ENV_FILE" ]; then
+        API_KEY=$(read_env_value "OPENWEATHER_API_KEY" "$ENV_FILE")
+        CITY_FROM_ENV=$(read_env_value "OPENWEATHER_CITY" "$ENV_FILE")
+        [ -n "$CITY_FROM_ENV" ] && CITY="$CITY_FROM_ENV"
+      fi
 
       if [ -z "$API_KEY" ]; then
         echo "🌡️ --°C"
@@ -490,22 +511,29 @@ in
           "format" = "{}";
           "exec" = ''
             #!/bin/sh
-            status=$(playerctl status 2>/dev/null)
+            line=$(playerctl metadata --format '{{status}}|{{artist}}|{{title}}' 2>/dev/null || true)
+
+            if [ -z "$line" ]; then
+              echo "⏹ No music"
+              exit 0
+            fi
+
+            status=$(printf '%s' "$line" | cut -d'|' -f1)
+            current_artist=$(printf '%s' "$line" | cut -d'|' -f2)
+            current_title=$(printf '%s' "$line" | cut -d'|' -f3-)
 
             if [ "$status" = "Playing" ]; then
-              current_artist=$(playerctl metadata artist)
-              current_title=$(playerctl metadata title)
               echo "▶ $current_artist - $current_title"
             elif [ "$status" = "Paused" ]; then
               echo "⏸ Paused"
             else
-             echo "⏹ No music"
+              echo "⏹ No music"
             fi
           '';
           "on-click" = "playerctl play-pause";
           "on-scroll-up" = "playerctl next";
           "on-scroll-down" = "playerctl previous";
-          "interval" = 1;
+          "interval" = 3;
           "tooltip" = false;
           "max-length" = 30;
           "escape" = true;

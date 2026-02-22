@@ -39,11 +39,9 @@
       # Make start idempotent even if stale container remained after a crash.
       ${pkgs.docker}/bin/docker rm -f homeassistant >/dev/null 2>&1 || true
 
-      # Try to refresh image, but allow startup from cached image when offline.
+      # Pull only when image is absent, so regular service restarts stay fast.
       if ! ${pkgs.docker}/bin/docker image inspect "$image" >/dev/null 2>&1; then
         ${pkgs.docker}/bin/docker pull "$image"
-      else
-        ${pkgs.docker}/bin/docker pull "$image" >/dev/null 2>&1 || true
       fi
     '';
     environment = {
