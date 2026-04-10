@@ -7,13 +7,13 @@
     layout = [
       {
         "label" = "shutdown";
-        "action" = "systemctl poweroff";
+        "action" = "safe-poweroff";
         "text" = "Shutdown";
         "keybind" = "s";
       }
       {
         "label" = "reboot";
-        "action" = "systemctl reboot";
+        "action" = "safe-reboot";
         "text" = "Reboot";
         "keybind" = "r";
       }

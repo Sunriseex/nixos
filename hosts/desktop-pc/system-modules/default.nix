@@ -7,6 +7,7 @@
     ./sound.nix
     ./users.nix
     # ./home-assistant.nix
+    ./virtualbox-safe-power.nix
     ./zsh.nix
     ./cpu.nix
     ./virtualbox-host.nix
