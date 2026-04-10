@@ -6,7 +6,7 @@
     ./keyboard.nix
     ./sound.nix
     ./users.nix
-    ./home-assistant.nix
+    # ./home-assistant.nix
     ./zsh.nix
     ./cpu.nix
     ./virtualbox-host.nix
