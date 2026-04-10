@@ -17,6 +17,7 @@
       "audio"
       "plugdev"
       "docker"
+      "vboxusers"
     ];
 
     shell = pkgs.zsh;

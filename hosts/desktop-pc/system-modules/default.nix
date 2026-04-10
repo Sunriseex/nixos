@@ -9,5 +9,6 @@
     ./home-assistant.nix
     ./zsh.nix
     ./cpu.nix
+    ./virtualbox-host.nix
   ];
 }
