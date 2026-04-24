@@ -11,7 +11,7 @@ import (
 
 func main() {
 	if err := config.Init(); err != nil {
-		slog.Error("Ошибка инициализации конфигурации: %v", err)
+		slog.Error("Ошибка инициализации конфигурации", "error", err)
 		os.Exit(1)
 	}
 

@@ -15,6 +15,7 @@
     ./desktop/niri-noctalia.nix
     ./desktop/rofi.nix
     ./desktop/styling.nix
+    ./desktop/virtualbox-docker-host.nix
     # Apps
     ./apps/discord.nix
     ./apps/firefox.nix

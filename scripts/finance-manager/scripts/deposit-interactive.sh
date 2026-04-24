@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_DIR="$HOME/.config/waybar"
+CONFIG_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/finance-manager"
+LEGACY_CONFIG_DIR="$HOME/.config/waybar"
+
+if [[ ! -f "$CONFIG_DIR/deposits.json" && -f "$LEGACY_CONFIG_DIR/deposits.json" ]]; then
+    CONFIG_DIR="$LEGACY_CONFIG_DIR"
+fi
+
 DEPOSITS_FILE="$CONFIG_DIR/deposits.json"
 LEDGER_PATH="$HOME/ObsidianVault/finances/transactions.ledger"
 
