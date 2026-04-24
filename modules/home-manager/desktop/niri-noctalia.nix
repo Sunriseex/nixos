@@ -162,6 +162,7 @@ in
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
+    spawn-at-startup "discord"
 
     binds {
         Mod+Return { spawn "ghostty"; }
