@@ -59,7 +59,6 @@
     "$HOME/.local/bin"
     "$HOME/scripts/nixos"
     "$HOME/scripts/system"
-    "$HOME/scripts/hypr"
   ];
   # Let Home Manager install and manage itself.
   programs.home-manager.enable = true;
