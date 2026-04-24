@@ -70,16 +70,10 @@
     };
   };
 
-  # Enables Hyprland at system-level
-  programs.hyprland.enable = true;
-
   # Fix SDDM not starting any DE session
   services.dbus.packages = with pkgs; [ dconf ];
 
   environment.sessionVariables = {
-    XDG_SESSION_TYPE = "wayland";
-    XDG_CURRENT_DESKTOP = "Hyprland";
-    WLR_NO_HARDWARE_CURSORS = "1";
     NIXOS_OZONE_WL = "1";
   };
 
