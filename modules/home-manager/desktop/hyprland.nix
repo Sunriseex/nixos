@@ -1,58 +1,48 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
+let
+  startDockerHostVm = pkgs.writeShellScriptBin "start-docker-host-vm" ''
+    set -euo pipefail
+
+    log="$HOME/.local/state/start-docker-host-vm.log"
+    mkdir -p "$(dirname "$log")"
+
+    {
+      echo "=== $(date -Is) ==="
+      echo "VBoxManage=$(command -v VBoxManage || true)"
+      id -nG
+      ${pkgs.coreutils}/bin/stat -c '%n %a %U %G %g' /dev/vboxdrv /dev/vboxdrvu || true
+
+      if ! VBoxManage list runningvms | ${pkgs.gnugrep}/bin/grep -Fq '"docker-host"'; then
+        VBoxManage startvm "docker-host" --type headless
+      else
+        echo "docker-host already running"
+      fi
+    } >> "$log" 2>&1
+  '';
+in
 {
   home.packages = with pkgs; [
     wayland
     xwayland
     rofi
     rofi-emoji
-    # rofi-wayland
-    hyprshot # Screenshot utility
-    jq # JSON parser and manipulator
-    grim # Screenshot tool
-    slurp # Screenshot selector
-    wl-clipboard # Wayland clipboard
-    libnotify # Notification sender
-    swaynotificationcenter # Notification daemon
+    hyprshot
+    jq
+    grim
+    slurp
+    wl-clipboard
+    libnotify
+    swaynotificationcenter
     brightnessctl
+    startDockerHostVm
   ];
 
   wayland.windowManager.hyprland = {
     enable = true;
     settings = {
-
-      ### MONITORS
-      #monitor = <name>, <resolution@refresh_rate>, <position>
-      monitor = [
-
-        "DVI-D-1, 1920x1080@60.01Hz, -1920x0, 1"
-        "HDMI-A-1, 1920x1080@165.00Hz, 0x0, 1"
-      ];
-
-      workspace = [
-        "1, monitor:HDMI-A-1"
-        "2, monitor:HDMI-A-1"
-        "3, monitor:HDMI-A-1"
-        "4, monitor:HDMI-A-1"
-        "5, monitor:HDMI-A-1"
-        "6, monitor:DVI-D-1"
-        "7, monitor:DVI-D-1"
-        "8, monitor:DVI-D-1"
-        "9, monitor:DVI-D-1"
-        "10, monitor:DVI-D-1"
-
-      ];
-
-      ### MY PROGRAMS
-      "$terminal" = "ghostty";
-      "$browser" = "firefox";
-      "$editor" = "code --wait";
-      "$fileManager" = "nemo";
-      "$menu" = "rofi -show drun";
-      "$emoji" = "rofimoji";
-
-      ### AUTOSTART
       exec-once = [
+        "sh -lc 'sleep 15; ${config.home.profileDirectory}/bin/start-docker-host-vm'"
         "waybar"
         "hyprpaper"
         "swaync"
@@ -60,7 +50,6 @@
         "v2rayN"
         "Telegram"
         "KeePassXC"
-        # "yandex-music"
         "spotify"
       ];
 

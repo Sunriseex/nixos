@@ -8,8 +8,8 @@
     ./users.nix
     # ./home-assistant.nix
     ./virtualbox-safe-power.nix
+    ./virtualbox-host.nix
     ./zsh.nix
     ./cpu.nix
-    ./virtualbox-host.nix
   ];
 }
