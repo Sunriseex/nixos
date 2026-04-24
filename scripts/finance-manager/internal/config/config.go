@@ -31,7 +31,6 @@ func Init() error {
 
 	envPaths := []string{
 		filepath.Join(home, "nixos/scripts/finance-manager/configs/.env"),
-		filepath.Join(home, "nixos/scripts/finance-manager/configs/.env"),
 		"./configs/.env",
 		".env",
 	}
@@ -48,12 +47,20 @@ func Init() error {
 		return err
 	}
 
-	dataPath, err := expandPath(getEnv("DATA_PATH", "~/.config/waybar/payments.json"))
+	dataPath, err := expandPath(getEnvWithLegacyDefault(
+		"DATA_PATH",
+		"~/.local/share/finance-manager/payments.json",
+		"~/.config/waybar/payments.json",
+	))
 	if err != nil {
 		return errors.NewConfigurationError("ошибка расширения пути DATA_PATH", err)
 	}
 
-	depositsDataPath, err := expandPath(getEnv("DEPOSITS_DATA_PATH", "~/.config/waybar/deposits.json"))
+	depositsDataPath, err := expandPath(getEnvWithLegacyDefault(
+		"DEPOSITS_DATA_PATH",
+		"~/.local/share/finance-manager/deposits.json",
+		"~/.config/waybar/deposits.json",
+	))
 	if err != nil {
 		return errors.NewConfigurationError("ошибка расширения пути DEPOSITS_DATA_PATH", err)
 	}
@@ -112,6 +119,21 @@ func initLogger(level slog.Level) {
 		handler = slog.NewJSONHandler(os.Stderr, opts)
 	}
 	slog.SetDefault(slog.New(handler))
+}
+
+func getEnvWithLegacyDefault(key, newDefault, legacyDefault string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+
+	legacyPath, err := expandPath(legacyDefault)
+	if err == nil {
+		if _, statErr := os.Stat(legacyPath); statErr == nil {
+			return legacyDefault
+		}
+	}
+
+	return newDefault
 }
 
 func expandPath(path string) (string, error) {

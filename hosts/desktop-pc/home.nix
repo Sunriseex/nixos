@@ -52,7 +52,6 @@
     TERMINAL = "ghostty";
     EDITOR = "nvim";
     VISUAL = "nvim";
-    HYPRSHOT_DIR = "$HOME/Screenshots";
   };
 
   home.sessionPath = [

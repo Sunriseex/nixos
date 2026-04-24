@@ -1,26 +1,6 @@
 { inputs, pkgs, ... }:
 
 let
-  startDockerHostVm = pkgs.writeShellScriptBin "start-docker-host-vm" ''
-    set -euo pipefail
-
-    log="$HOME/.local/state/start-docker-host-vm.log"
-    mkdir -p "$(dirname "$log")"
-
-    {
-      echo "=== $(date -Is) ==="
-      echo "VBoxManage=$(command -v VBoxManage || true)"
-      id -nG
-      ${pkgs.coreutils}/bin/stat -c '%n %a %U %G %g' /dev/vboxdrv /dev/vboxdrvu || true
-
-      if ! VBoxManage list runningvms | ${pkgs.gnugrep}/bin/grep -Fq '"docker-host"'; then
-        VBoxManage startvm "docker-host" --type headless
-      else
-        echo "docker-host already running"
-      fi
-    } >> "$log" 2>&1
-  '';
-
   wallpaper = builtins.path {
     path = ../../../wallpapers/dark-bright-mountains.jpg;
     name = "dark-bright-mountains.jpg";
@@ -53,7 +33,6 @@ in
     playerctl
     wl-clipboard
     xwayland-satellite
-    startDockerHostVm
   ];
 
   home.file.".cache/noctalia/wallpapers.json".text = builtins.toJSON {
@@ -183,8 +162,6 @@ in
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
-
-    spawn-sh-at-startup "sleep 15; start-docker-host-vm"
 
     binds {
         Mod+Return { spawn "ghostty"; }
