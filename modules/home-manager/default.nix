@@ -16,6 +16,7 @@
     ./desktop/hyprpaper.nix
     ./desktop/mpv.nix
     ./desktop/nemo.nix
+    ./desktop/niri-noctalia.nix
     ./desktop/rofi.nix
     ./desktop/styling.nix
     ./desktop/waybar.nix
