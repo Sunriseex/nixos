@@ -17,8 +17,8 @@
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
     # Apps
+    ./apps/brave.nix
     ./apps/discord.nix
-    ./apps/firefox.nix
     ./apps/librewolf.nix
     # Development
     ./dev-tools.nix

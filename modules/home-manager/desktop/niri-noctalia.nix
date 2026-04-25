@@ -159,7 +159,7 @@ in
     }
 
     window-rule {
-        match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+        match app-id=r#"brave-browser$"# title="^Picture-in-Picture$"
         open-floating true
     }
 
@@ -202,7 +202,7 @@ in
     binds {
         Mod+Return { spawn "ghostty"; }
         Mod+V { spawn "code" "--wait"; }
-        Mod+B { spawn "firefox"; }
+        Mod+B { spawn "brave"; }
         Mod+E { spawn "nemo"; }
         Mod+Space { ${noctalia ''"launcher" "toggle"''}; }
         Mod+S { ${noctalia ''"controlCenter" "toggle"''}; }
