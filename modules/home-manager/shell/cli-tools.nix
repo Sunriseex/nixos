@@ -17,7 +17,6 @@
     unzip
     ffmpeg
     upower
-    wl-clipboard
     fanctl
     gamemode
     tlp
