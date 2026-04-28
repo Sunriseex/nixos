@@ -34,7 +34,6 @@
     piper # Mouse configuration app
     bluez
     bluez-tools
-    protonup-qt
     polychromatic
     razergenie
     kooha
