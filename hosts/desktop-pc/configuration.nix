@@ -9,7 +9,6 @@
     ./hardware-configuration.nix
     ./system-modules
     ../../modules/nixos
-    ./system-modules/scheduled-tasks.nix
     inputs.home-manager.nixosModules.default
     inputs.nvf.nixosModules.default
     inputs.nix-flatpak.nixosModules.nix-flatpak
