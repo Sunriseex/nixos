@@ -1,8 +1,13 @@
 { pkgs, ... }:
 
+let
+  proxiedBrave = pkgs.brave.override {
+    commandLineArgs = "--proxy-server=socks5://127.0.0.1:10808";
+  };
+in
 {
   home.packages = [
-    pkgs.brave
+    proxiedBrave
   ];
 
   home.sessionVariables = {
