@@ -209,6 +209,20 @@ let
     }
 
     start_vm() {
+      start_complete=0
+
+      restore_on_start_failure() {
+        status=$?
+        trap - ERR
+        if [ "$start_complete" -eq 0 ]; then
+          log_msg "start failed; restoring Windows network adapters"
+          restore_windows_network || true
+        fi
+        exit "$status"
+      }
+
+      trap restore_on_start_failure ERR
+
       {
         log_msg "start requested"
         log_msg "groups: $(id -nG)"
@@ -216,12 +230,16 @@ let
 
         if running; then
           log_msg "$vm_name already running"
-          exit 0
+          start_complete=1
+          trap - ERR
+          return 0
         fi
 
         repair_linux_network
         discard_stale_saved_state
         ${vbm} startvm "$vm_name" --type headless >> "$log" 2>&1
+        start_complete=1
+        trap - ERR
       } >> "$log" 2>&1
     }
 
@@ -248,8 +266,23 @@ let
       } >> "$log" 2>&1
     }
 
+    monitor_vm() {
+      start_vm
+
+      trap 'log_msg "monitor stopped"; stop_vm; exit 0' TERM INT
+
+      while true; do
+        if ! running; then
+          log_msg "$vm_name stopped while monitored"
+          exit 1
+        fi
+        sleep 30
+      done
+    }
+
     case "''${1:-start}" in
       start) start_vm ;;
+      monitor) monitor_vm ;;
       stop) stop_vm ;;
       status) vm_state ;;
       network-status) network_status ;;
@@ -257,7 +290,7 @@ let
       repair-network) repair_linux_network ;;
       restore-windows-network) restore_windows_network ;;
       *)
-        echo "Usage: docker-host-vm {start|stop|status|network-status|discard-state|repair-network|restore-windows-network}" >&2
+        echo "Usage: docker-host-vm {start|monitor|stop|status|network-status|discard-state|repair-network|restore-windows-network}" >&2
         exit 64
         ;;
     esac
@@ -276,13 +309,14 @@ in
     };
 
     Service = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+      Type = "simple";
       Environment = [
         "VBOX_USER_HOME=%h/.config/VirtualBox"
       ];
-      ExecStart = "${dockerHostVm}/bin/docker-host-vm start";
+      ExecStart = "${dockerHostVm}/bin/docker-host-vm monitor";
       ExecStop = "${dockerHostVm}/bin/docker-host-vm stop";
+      Restart = "on-failure";
+      RestartSec = "30s";
       TimeoutStartSec = "120s";
       TimeoutStopSec = "150s";
     };

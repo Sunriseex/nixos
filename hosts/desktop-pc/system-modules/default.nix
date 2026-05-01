@@ -6,7 +6,6 @@
     ./keyboard.nix
     ./sound.nix
     ./users.nix
-    # ./home-assistant.nix
     ./virtualbox-safe-power.nix
     ./virtualbox-host.nix
     ./zsh.nix

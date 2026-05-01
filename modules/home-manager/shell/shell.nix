@@ -61,8 +61,6 @@ in
       disk-clean-plan = "~/.local/bin/disk-cleanup.sh --dry-run";
       disk-clean-all = "~/.local/bin/disk-cleanup.sh --docker";
       cd = "z";
-      payment = "sh ~/nixos/scripts/finance-manager/scripts/interactive-add.sh";
-      deposit = "sh ~/nixos/scripts/finance-manager/scripts/deposit-interactive.sh";
     };
 
   };
