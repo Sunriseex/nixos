@@ -45,7 +45,14 @@
   programs.zsh.enable = true;
 
   # SSH
-  programs.ssh.startAgent = true;
+  programs.ssh = {
+    startAgent = true;
+    extraConfig = ''
+      Host VirtualBox
+        AddKeysToAgent yes
+        IdentityFile ~/.ssh/id_ed25519
+    '';
+  };
 
   # GPG
   programs.gnupg.agent = {
