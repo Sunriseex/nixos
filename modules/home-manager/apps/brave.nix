@@ -2,7 +2,7 @@
 
 let
   proxiedBrave = pkgs.brave.override {
-    commandLineArgs = "--proxy-server=socks5://127.0.0.1:10808 --proxy-bypass-list='localhost;127.0.0.1;*.home.arpa;192.168.56.0/24'";
+    commandLineArgs = "--proxy-server=socks5://127.0.0.1:10808 --proxy-bypass-list='localhost;127.0.0.1;home.arpa;*.home.arpa;192.168.56.0/24'";
   };
 in
 {

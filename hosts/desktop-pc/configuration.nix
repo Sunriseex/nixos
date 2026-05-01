@@ -114,7 +114,11 @@
 
   system.autoUpgrade = {
     enable = true;
-    flake = "/home/snrx/nixos#desktop-pc";
+    flake = "github:sunriseex/nixos#desktop-pc";
+    flags = [
+      "--update-input"
+      "nixpkgs"
+    ];
     dates = "weekly";
     allowReboot = false;
   };
