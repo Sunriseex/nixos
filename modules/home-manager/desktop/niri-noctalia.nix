@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   wallpaper = builtins.path {
@@ -7,26 +12,37 @@ let
   };
 
   noctalia = command: ''spawn "noctalia-shell" "ipc" "call" ${command}'';
+  initialNoctaliaSettings = {
+    general = {
+      radiusRatio = 0.2;
+    };
+    location = {
+      name = "Moscow, Russia";
+    };
+    wallpaper = {
+      enableOverviewWallpaper = false;
+    };
+  };
+  initialNoctaliaWallpapers = {
+    defaultWallpaper = "${wallpaper}";
+    wallpapers = {
+      "HDMI-A-1" = "${wallpaper}";
+      "DVI-D-1" = "${wallpaper}";
+    };
+  };
+  initialNoctaliaSettingsFile = pkgs.writeText "noctalia-initial-settings.json" (
+    builtins.toJSON initialNoctaliaSettings
+  );
+  initialNoctaliaWallpapersFile = pkgs.writeText "noctalia-initial-wallpapers.json" (
+    builtins.toJSON initialNoctaliaWallpapers
+  );
 in
 {
   imports = [
     inputs.noctalia.homeModules.default
   ];
 
-  programs.noctalia-shell = {
-    enable = true;
-    settings = {
-      general = {
-        radiusRatio = 0.2;
-      };
-      location = {
-        name = "Moscow, Russia";
-      };
-      wallpaper = {
-        enableOverviewWallpaper = false;
-      };
-    };
-  };
+  programs.noctalia-shell.enable = true;
 
   home.packages = with pkgs; [
     brightnessctl
@@ -35,12 +51,53 @@ in
     xwayland-satellite
   ];
 
-  home.file.".cache/noctalia/wallpapers.json".text = builtins.toJSON {
-    defaultWallpaper = "${wallpaper}";
-    wallpapers = {
-      "HDMI-A-1" = "${wallpaper}";
-      "DVI-D-1" = "${wallpaper}";
-    };
+  home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    seed_json_file() {
+      file="$1"
+      seed="$2"
+
+      ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$file")"
+
+      if [ -L "$file" ]; then
+        tmp="$(${pkgs.coreutils}/bin/mktemp)"
+        if [ -e "$file" ]; then
+          ${pkgs.coreutils}/bin/cp --remove-destination "$(${pkgs.coreutils}/bin/readlink -f "$file")" "$tmp" 2>/dev/null \
+            || ${pkgs.coreutils}/bin/cp --remove-destination "$seed" "$tmp"
+        else
+          ${pkgs.coreutils}/bin/cp --remove-destination "$seed" "$tmp"
+        fi
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$file"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 0644 "$tmp" "$file"
+        ${pkgs.coreutils}/bin/rm -f "$tmp"
+      elif [ ! -e "$file" ]; then
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm0644 "$seed" "$file"
+      fi
+    }
+
+    seed_json_file "$HOME/.config/noctalia/settings.json" "${initialNoctaliaSettingsFile}"
+    seed_json_file "$HOME/.cache/noctalia/wallpapers.json" "${initialNoctaliaWallpapersFile}"
+  '';
+
+  xdg.configFile."autostart/v2rayN.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=v2rayN
+      Exec=v2rayN
+      Hidden=true
+    '';
+  };
+
+  xdg.configFile."autostart/org.keepassxc.KeePassXC.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=KeePassXC
+      Exec=KeePassXC
+      Hidden=true
+    '';
   };
 
   xdg.configFile."niri/config.kdl".text = ''
@@ -124,7 +181,7 @@ in
     }
 
     window-rule {
-        match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+        match app-id=r#"brave-browser$"# title="^Picture-in-Picture$"
         open-floating true
     }
 
@@ -158,16 +215,16 @@ in
     }
 
     spawn-at-startup "noctalia-shell"
-    spawn-at-startup "v2rayN"
+    spawn-at-startup "sh" "-c" "${pkgs.procps}/bin/pgrep -x v2rayN >/dev/null || exec v2rayN"
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
-    spawn-at-startup "discord"
+    spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord"
 
     binds {
         Mod+Return { spawn "ghostty"; }
         Mod+V { spawn "code" "--wait"; }
-        Mod+B { spawn "firefox"; }
+        Mod+B { spawn "brave"; }
         Mod+E { spawn "nemo"; }
         Mod+Space { ${noctalia ''"launcher" "toggle"''}; }
         Mod+S { ${noctalia ''"controlCenter" "toggle"''}; }

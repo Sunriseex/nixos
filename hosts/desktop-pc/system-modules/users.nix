@@ -6,6 +6,8 @@
     isNormalUser = true;
     homeMode = "0755";
     description = "Denis Vakhrushev";
+    # This is a single-user admin workstation; these groups intentionally grant
+    # broad local control over the system, Docker, and VirtualBox.
     extraGroups = [
       "networkmanager"
       "wheel"
@@ -25,10 +27,6 @@
   };
 
   environment.shells = with pkgs; [ zsh ];
-  environment.systemPackages = with pkgs; [
-    eza
-    fzf
-  ];
 
   # Sets trusted users
   nix.settings.trusted-users = [

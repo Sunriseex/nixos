@@ -9,7 +9,6 @@
     ./hardware-configuration.nix
     ./system-modules
     ../../modules/nixos
-    ./system-modules/scheduled-tasks.nix
     inputs.home-manager.nixosModules.default
     inputs.nvf.nixosModules.default
     inputs.nix-flatpak.nixosModules.nix-flatpak
@@ -46,7 +45,14 @@
   programs.zsh.enable = true;
 
   # SSH
-  programs.ssh.startAgent = true;
+  programs.ssh = {
+    startAgent = true;
+    extraConfig = ''
+      Host VirtualBox
+        AddKeysToAgent yes
+        IdentityFile ~/.ssh/id_ed25519
+    '';
+  };
 
   # GPG
   programs.gnupg.agent = {

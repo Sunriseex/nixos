@@ -4,6 +4,10 @@ let
   vmName = "docker-host";
   windowsBridgeAdapter = "Realtek Gaming 2.5GbE Family Controller";
   windowsHostOnlyAdapter = "VirtualBox Host-Only Ethernet Adapter";
+  linuxHostOnlyAdapter = "vboxnet0";
+  linuxHostOnlyAddress = "192.168.56.1";
+  linuxHostOnlyMask = "255.255.255.0";
+  linuxGuestAddress = "192.168.56.101";
   vbm = "/run/current-system/sw/bin/VBoxManage";
   logFile = ''"$HOME/.local/state/${vmName}.log"'';
 
@@ -40,6 +44,26 @@ let
         | ${pkgs.gnused}/bin/sed -n 's/^hostonlyadapter2="\([^"]*\)"/\1/p'
     }
 
+    host_only_ip_address() {
+      adapter="$1"
+      ${vbm} list hostonlyifs \
+        | ${pkgs.gawk}/bin/awk -v adapter="$adapter" '
+            $1 == "Name:" && $2 == adapter { found = 1; next }
+            found && $1 == "IPAddress:" { print $2; exit }
+            found && $1 == "Name:" { exit }
+          '
+    }
+
+    host_only_network_mask() {
+      adapter="$1"
+      ${vbm} list hostonlyifs \
+        | ${pkgs.gawk}/bin/awk -v adapter="$adapter" '
+            $1 == "Name:" && $2 == adapter { found = 1; next }
+            found && $1 == "NetworkMask:" { print $2; exit }
+            found && $1 == "Name:" { exit }
+          '
+    }
+
     linux_default_interface() {
       ${pkgs.iproute2}/bin/ip -o route show default \
         | ${pkgs.gawk}/bin/awk '{ for (i = 1; i <= NF; i++) if ($i == "dev") { print $(i + 1); exit } }'
@@ -73,6 +97,20 @@ let
       fi
     }
 
+    ensure_host_only_address() {
+      adapter="$1"
+      address="${linuxHostOnlyAddress}"
+      mask="${linuxHostOnlyMask}"
+
+      current_address="$(host_only_ip_address "$adapter")"
+      current_mask="$(host_only_network_mask "$adapter")"
+
+      if [ "$current_address" != "$address" ] || [ "$current_mask" != "$mask" ]; then
+        log_msg "configuring $adapter as $address/$mask"
+        ${vbm} hostonlyif ipconfig "$adapter" --ip "$address" --netmask "$mask"
+      fi
+    }
+
     repair_linux_bridge_adapter() {
       current="$(current_bridge_adapter)"
       if bridge_exists "$current"; then
@@ -102,13 +140,17 @@ let
     repair_linux_host_only_adapter() {
       current="$(current_host_only_adapter)"
       if host_only_exists "$current"; then
+        if [ "$current" = "${linuxHostOnlyAdapter}" ]; then
+          ensure_host_only_address "${linuxHostOnlyAdapter}"
+        fi
         log_msg "hostonlyadapter2 '$current' exists"
         return 0
       fi
 
-      if host_only_exists "vboxnet0"; then
-        log_msg "hostonlyadapter2 '$current' is unavailable on Linux; using 'vboxnet0'"
-        set_host_only_adapter "vboxnet0"
+      if host_only_exists "${linuxHostOnlyAdapter}"; then
+        log_msg "hostonlyadapter2 '$current' is unavailable on Linux; using '${linuxHostOnlyAdapter}'"
+        ensure_host_only_address "${linuxHostOnlyAdapter}"
+        set_host_only_adapter "${linuxHostOnlyAdapter}"
         return 0
       fi
 
@@ -123,6 +165,32 @@ let
     repair_linux_network() {
       repair_linux_bridge_adapter
       repair_linux_host_only_adapter
+    }
+
+    network_status() {
+      echo "VM: $vm_name"
+      echo "State: $(vm_state)"
+      echo "Bridge adapter: $(current_bridge_adapter)"
+      echo "Host-only adapter: $(current_host_only_adapter)"
+      echo "Host-only host IP: ${linuxHostOnlyAddress}"
+      echo "Expected guest IP: ${linuxGuestAddress}"
+      echo
+      ${vbm} list hostonlyifs \
+        | ${pkgs.gnused}/bin/sed -n '/^Name: *${linuxHostOnlyAdapter}$/,/^$/p'
+      echo
+      if ${pkgs.coreutils}/bin/timeout 2 ${pkgs.bash}/bin/bash -c "</dev/tcp/${linuxHostOnlyAddress}/10808" >/dev/null 2>&1; then
+        echo "open ${linuxHostOnlyAddress}:10808 host proxy"
+      else
+        echo "closed ${linuxHostOnlyAddress}:10808 host proxy"
+      fi
+      echo
+      for port in 22 80 443 8000 8080 3000 5173; do
+        if ${pkgs.coreutils}/bin/timeout 2 ${pkgs.bash}/bin/bash -c "</dev/tcp/${linuxGuestAddress}/$port" >/dev/null 2>&1; then
+          echo "open ${linuxGuestAddress}:$port"
+        else
+          echo "closed ${linuxGuestAddress}:$port"
+        fi
+      done
     }
 
     restore_windows_network() {
@@ -141,6 +209,20 @@ let
     }
 
     start_vm() {
+      start_complete=0
+
+      restore_on_start_failure() {
+        status=$?
+        trap - ERR
+        if [ "$start_complete" -eq 0 ]; then
+          log_msg "start failed; restoring Windows network adapters"
+          restore_windows_network || true
+        fi
+        exit "$status"
+      }
+
+      trap restore_on_start_failure ERR
+
       {
         log_msg "start requested"
         log_msg "groups: $(id -nG)"
@@ -148,12 +230,16 @@ let
 
         if running; then
           log_msg "$vm_name already running"
-          exit 0
+          start_complete=1
+          trap - ERR
+          return 0
         fi
 
         repair_linux_network
         discard_stale_saved_state
         ${vbm} startvm "$vm_name" --type headless >> "$log" 2>&1
+        start_complete=1
+        trap - ERR
       } >> "$log" 2>&1
     }
 
@@ -180,15 +266,31 @@ let
       } >> "$log" 2>&1
     }
 
+    monitor_vm() {
+      start_vm
+
+      trap 'log_msg "monitor stopped"; stop_vm; exit 0' TERM INT
+
+      while true; do
+        if ! running; then
+          log_msg "$vm_name stopped while monitored"
+          exit 1
+        fi
+        sleep 30
+      done
+    }
+
     case "''${1:-start}" in
       start) start_vm ;;
+      monitor) monitor_vm ;;
       stop) stop_vm ;;
       status) vm_state ;;
+      network-status) network_status ;;
       discard-state) discard_stale_saved_state ;;
       repair-network) repair_linux_network ;;
       restore-windows-network) restore_windows_network ;;
       *)
-        echo "Usage: docker-host-vm {start|stop|status|discard-state|repair-network|restore-windows-network}" >&2
+        echo "Usage: docker-host-vm {start|monitor|stop|status|network-status|discard-state|repair-network|restore-windows-network}" >&2
         exit 64
         ;;
     esac
@@ -207,13 +309,14 @@ in
     };
 
     Service = {
-      Type = "oneshot";
-      RemainAfterExit = true;
+      Type = "simple";
       Environment = [
         "VBOX_USER_HOME=%h/.config/VirtualBox"
       ];
-      ExecStart = "${dockerHostVm}/bin/docker-host-vm start";
+      ExecStart = "${dockerHostVm}/bin/docker-host-vm monitor";
       ExecStop = "${dockerHostVm}/bin/docker-host-vm stop";
+      Restart = "on-failure";
+      RestartSec = "30s";
       TimeoutStartSec = "120s";
       TimeoutStopSec = "150s";
     };
@@ -222,4 +325,5 @@ in
       WantedBy = [ "graphical-session.target" ];
     };
   };
+
 }

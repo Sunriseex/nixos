@@ -18,11 +18,6 @@
 
   home.packages = with pkgs; [
     dconf
-    gopls
-    delve
-    golangci-lint
-    zoxide
-    atuin
   ];
 
   xdg = {
