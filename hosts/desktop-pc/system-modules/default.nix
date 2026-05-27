@@ -10,5 +10,6 @@
     ./virtualbox-host.nix
     ./zsh.nix
     ./cpu.nix
+    ./docker.nix
   ];
 }

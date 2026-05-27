@@ -20,12 +20,14 @@
       "plugdev"
       "docker"
       "vboxusers"
+      "render"
     ];
 
     shell = pkgs.zsh;
 
   };
 
+  services.seatd.enable = true;
   environment.shells = with pkgs; [ zsh ];
 
   # Sets trusted users

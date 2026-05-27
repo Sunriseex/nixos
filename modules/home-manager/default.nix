@@ -17,11 +17,13 @@
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
     # Apps
-    ./apps/brave.nix
+    ./apps/helium.nix
     ./apps/discord.nix
     ./apps/librewolf.nix
     # Development
     ./dev-tools.nix
     ./go-dev.nix
+    ./vscodium.nix
+    ./lazyvim.nix
   ];
 }

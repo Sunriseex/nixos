@@ -10,7 +10,6 @@
     ./system-modules
     ../../modules/nixos
     inputs.home-manager.nixosModules.default
-    inputs.nvf.nixosModules.default
     inputs.nix-flatpak.nixosModules.nix-flatpak
     inputs.agenix.nixosModules.default
     inputs.silent-sddm.nixosModules.default
@@ -43,6 +42,14 @@
 
   # ZSH
   programs.zsh.enable = true;
+
+  programs.tmux = {
+      enable = true;
+      plugins = with pkgs.tmuxPlugins; [
+      resurrect
+      continuum
+      ];
+    };
 
   # SSH
   programs.ssh = {
@@ -91,8 +98,12 @@
     inputs.agenix.packages.${pkgs.system}.default
     nftables
     jq
-
+    vicinae
   ];
+
+ # networking.proxy.default = "http://127.0.0.1:10808/";
+#  networking.proxy.noProxy = "127.0.0.1,localhost,::1";
+
   # Enabled services
   services.openssh = {
     enable = true;

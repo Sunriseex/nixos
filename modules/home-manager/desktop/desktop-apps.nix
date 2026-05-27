@@ -22,7 +22,6 @@
     godot
     v2rayn
     xray
-    vscode
     freecad
     synology-drive-client
     localsend # Cross-platform FOSS alternative to Airdrop
@@ -38,7 +37,6 @@
     razergenie
     kooha
     mousai
-    yandex-music
   ];
 
   services.flatpak.packages = [

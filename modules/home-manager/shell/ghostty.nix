@@ -8,7 +8,7 @@
       font-family = "FiraCode Nerd Font Mono";
       font-style = "Bold";
       font-size = 14;
-      background-opacity = 0.1;
+      background-opacity = 0.8;
       background-blur = 1;
       cursor-opacity = 1;
       selection-background = "#F5E0DC";

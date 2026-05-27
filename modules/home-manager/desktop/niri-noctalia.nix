@@ -181,7 +181,7 @@ in
     }
 
     window-rule {
-        match app-id=r#"brave-browser$"# title="^Picture-in-Picture$"
+        match app-id=r#"helium$"# title="^Picture-in-Picture$"
         open-floating true
     }
 
@@ -223,10 +223,10 @@ in
 
     binds {
         Mod+Return { spawn "ghostty"; }
-        Mod+V { spawn "code" "--wait"; }
-        Mod+B { spawn "brave"; }
+        Mod+V { spawn "codium" "--wait"; }
+        Mod+B { spawn "helium"; }
         Mod+E { spawn "nemo"; }
-        Mod+Space { ${noctalia ''"launcher" "toggle"''}; }
+        Mod+Space { spawn "vicinae" "toggle"; }
         Mod+S { ${noctalia ''"controlCenter" "toggle"''}; }
         Mod+Comma { ${noctalia ''"settings" "toggle"''}; }
         Mod+P { ${noctalia ''"sessionMenu" "toggle"''}; }

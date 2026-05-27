@@ -2,8 +2,10 @@
   description = "Sunriseex's NixOS system config flake";
 
   nixConfig = {
-    extra-substituters = [ "https://noctalia.cachix.org" ];
-    extra-trusted-public-keys = [ "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4=" ];
+    #extra-substituters = [ "https://noctalia.cachix.org" ];
+    #extra-trusted-public-keys = [
+    #  "noctalia.cachix.org-1:pCOR47nnMEo5thcxNDtzWpOxNFQsBRglJzxWPp3dkU4="
+    # ];
   };
 
   inputs = {
@@ -24,11 +26,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nvf = {
-      url = "github:notashelf/nvf";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nix-flatpak = {
       url = "github:gmodena/nix-flatpak/latest";
     };
@@ -42,6 +39,11 @@
       url = "github:noctalia-dev/noctalia-shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    helium-browser = {
+      url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -49,7 +51,6 @@
       self,
       nixpkgs,
       home-manager,
-      nvf,
       nix-flatpak,
       silent-sddm,
       agenix,
