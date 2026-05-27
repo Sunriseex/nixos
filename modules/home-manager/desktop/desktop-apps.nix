@@ -30,6 +30,7 @@
     losslesscut-bin # Lossless video/audio editing
     textpieces # Text processing utility
     identity # Image and videos comparison tool
+    fsearch # Fast indexed file search, similar to Everything
     piper # Mouse configuration app
     bluez
     bluez-tools

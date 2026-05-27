@@ -175,6 +175,13 @@ in
 
     prefer-no-csd
 
+    cursor {
+        xcursor-theme "WhiteSur-cursors"
+        xcursor-size 20
+        hide-when-typing
+        hide-after-inactive-ms 5000
+    }
+
     window-rule {
         geometry-corner-radius 12
         clip-to-geometry true
@@ -223,7 +230,7 @@ in
 
     binds {
         Mod+Return { spawn "ghostty"; }
-        Mod+V { spawn "codium" "--wait"; }
+        Mod+V { spawn "code" "--wait"; }
         Mod+B { spawn "helium"; }
         Mod+E { spawn "nemo"; }
         Mod+Space { spawn "vicinae" "toggle"; }
@@ -231,6 +238,7 @@ in
         Mod+Comma { ${noctalia ''"settings" "toggle"''}; }
         Mod+P { ${noctalia ''"sessionMenu" "toggle"''}; }
         Mod+Shift+L { ${noctalia ''"lockScreen" "lock"''}; }
+        Mod+Shift+C { spawn "cursor-locator"; }
 
         Mod+Q { close-window; }
         Mod+M { quit; }

@@ -10,11 +10,13 @@
     ./shell/shell.nix
     # Desktop
     ./desktop/desktop-apps.nix
+    ./desktop/idle.nix
     ./desktop/mpv.nix
     ./desktop/nemo.nix
     ./desktop/niri-noctalia.nix
     ./desktop/rofi.nix
     ./desktop/styling.nix
+    ./desktop/codex-limit-rings.nix
     ./desktop/virtualbox-docker-host.nix
     # Apps
     ./apps/helium.nix
