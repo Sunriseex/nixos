@@ -22,9 +22,9 @@
     pkgs.remmina
     vicinae
   ];
-# gtk.gtk4.theme = config.gtk.theme;
- programs.neovim.withRuby = true;
- programs.neovim.withPython3 = true;
+  # gtk.gtk4.theme = config.gtk.theme;
+  programs.neovim.withRuby = true;
+  programs.neovim.withPython3 = true;
 
   xdg = {
     enable = true;
@@ -49,19 +49,19 @@
     };
   };
 
-systemd.user.services.vicinae = {
-  Unit = {
-    Description = "Vicinae Launcher Daemon";
-    After = [ "graphical-session.target" ];
+  systemd.user.services.vicinae = {
+    Unit = {
+      Description = "Vicinae Launcher Daemon";
+      After = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.vicinae}/bin/vicinae server --replace";
+      Restart = "on-failure";
+    };
+    Install = {
+      WantedBy = [ "graphical-session.target" ];
+    };
   };
-  Service = {
-    ExecStart = "${pkgs.vicinae}/bin/vicinae --daemon";
-    Restart = "on-failure";
-  };
-  Install = {
-    WantedBy = [ "graphical-session.target" ];
-  };
-};
   home.sessionVariables = {
     TERMINAL = "ghostty";
     EDITOR = "nvim";

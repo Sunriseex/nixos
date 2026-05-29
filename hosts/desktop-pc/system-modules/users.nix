@@ -23,12 +23,15 @@
       "render"
     ];
 
-    shell = pkgs.zsh;
+    shell = pkgs.fish;
 
   };
 
   services.seatd.enable = true;
-  environment.shells = with pkgs; [ zsh ];
+  environment.shells = with pkgs; [
+    fish
+    zsh
+  ];
 
   # Sets trusted users
   nix.settings.trusted-users = [

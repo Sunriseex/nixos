@@ -57,6 +57,17 @@ return {
             },
           },
         },
+        nil_ls = {
+          settings = {
+            ["nil"] = {
+              formatting = {
+                command = { "nixfmt" },
+              },
+            },
+          },
+        },
+        ts_ls = {},
+        eslint = {},
       },
     },
   },
@@ -65,10 +76,17 @@ return {
     "stevearc/conform.nvim",
     opts = {
       formatters_by_ft = {
-        go = { "goimports", "gofumpt" },
+        go = { "gofumpt" },
         gomod = { "gofmt" },
         gowork = { "gofmt" },
         gotmpl = { "gofmt" },
+        nix = { "nixfmt" },
+        javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascriptreact = { "prettierd", "prettier", stop_after_first = true },
+        typescript = { "prettierd", "prettier", stop_after_first = true },
+        typescriptreact = { "prettierd", "prettier", stop_after_first = true },
+        json = { "prettierd", "prettier", stop_after_first = true },
+        yaml = { "prettierd", "prettier", stop_after_first = true },
       },
       format_on_save = {
         timeout_ms = 1000,
@@ -151,7 +169,7 @@ return {
         lsp_cfg = false,
         lsp_keymaps = false,
         gofmt = "gofumpt",
-        goimports = "goimports",
+        goimports = "gofumpt",
         tag_transform = false,
         test_runner = "go",
         verbose = false,
@@ -176,6 +194,10 @@ return {
 
       lint.linters_by_ft = {
         go = { "golangcilint" },
+        javascript = { "eslint_d" },
+        javascriptreact = { "eslint_d" },
+        typescript = { "eslint_d" },
+        typescriptreact = { "eslint_d" },
       }
 
       vim.api.nvim_create_autocmd({ "BufWritePost", "BufReadPost", "InsertLeave" }, {

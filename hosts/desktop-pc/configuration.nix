@@ -40,16 +40,17 @@
     backupFileExtension = "backup";
   };
 
-  # ZSH
+  # Shells
+  programs.fish.enable = true;
   programs.zsh.enable = true;
 
   programs.tmux = {
-      enable = true;
-      plugins = with pkgs.tmuxPlugins; [
+    enable = true;
+    plugins = with pkgs.tmuxPlugins; [
       resurrect
       continuum
-      ];
-    };
+    ];
+  };
 
   # SSH
   programs.ssh = {
@@ -66,7 +67,16 @@
     enable = true;
     enableSSHSupport = false;
     pinentryPackage = pkgs.pinentry-gnome3;
+    settings = {
+      default-cache-ttl = 86400;
+      max-cache-ttl = 86400;
+    };
   };
+
+  security.sudo.extraConfig = ''
+    Defaults timestamp_timeout=1440
+    Defaults timestamp_type=global
+  '';
 
   # Automatize garbage collection
   nix.gc = {
@@ -96,13 +106,14 @@
   environment.systemPackages = with pkgs; [
     home-manager
     inputs.agenix.packages.${pkgs.system}.default
+    python3
     nftables
     jq
     vicinae
   ];
 
- # networking.proxy.default = "http://127.0.0.1:10808/";
-#  networking.proxy.noProxy = "127.0.0.1,localhost,::1";
+  # networking.proxy.default = "http://127.0.0.1:10808/";
+  #  networking.proxy.noProxy = "127.0.0.1,localhost,::1";
 
   # Enabled services
   services.openssh = {

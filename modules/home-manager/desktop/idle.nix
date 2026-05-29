@@ -25,7 +25,8 @@ let
       set -euo pipefail
 
       niri msg action power-on-monitors || true
-      razer-cli --restore || razer-cli -b 100 || true
+      razer-cli --restore || true
+      razer-cli -b 100 || true
     '';
   };
 

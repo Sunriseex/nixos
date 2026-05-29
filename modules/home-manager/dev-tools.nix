@@ -24,6 +24,15 @@
     nix-prefetch-github
     codex
     nodejs
+    pnpm
+    yarn
+    bun
+    playwright-test
+    prettier
+    prettierd
+    eslint_d
+    typescript-language-server
+    vscode-langservers-extracted
     postgresql_17
   ];
 

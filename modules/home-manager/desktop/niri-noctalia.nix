@@ -12,6 +12,144 @@ let
   };
 
   noctalia = command: ''spawn "noctalia-shell" "ipc" "call" ${command}'';
+  noctaliaMacOSTheme = pkgs.writeShellApplication {
+    name = "noctalia-macos-theme";
+    runtimeInputs = with pkgs; [
+      coreutils
+      jq
+      noctalia-shell
+    ];
+    text = ''
+      set -euo pipefail
+
+      config_home="''${XDG_CONFIG_HOME:-$HOME/.config}"
+      noctalia_dir="$config_home/noctalia"
+      settings_file="$noctalia_dir/settings.json"
+      colors_file="$noctalia_dir/colors.json"
+      scheme_file="$noctalia_dir/colorschemes/macOS/macOS.json"
+
+      if [ ! -f "$scheme_file" ]; then
+        echo "macOS color scheme is missing: $scheme_file" >&2
+        exit 1
+      fi
+
+      dark_mode="$(jq -r '.colorSchemes.darkMode // true' "$settings_file" 2>/dev/null || printf true)"
+      if [ "$dark_mode" = "true" ]; then
+        jq '.dark' "$scheme_file" > "$colors_file.tmp"
+      else
+        jq '.light' "$scheme_file" > "$colors_file.tmp"
+      fi
+      mv "$colors_file.tmp" "$colors_file"
+
+      jq '.colorSchemes.predefinedScheme = "macOS" | .colorSchemes.useWallpaperColors = false' \
+        "$settings_file" > "$settings_file.tmp"
+      mv "$settings_file.tmp" "$settings_file"
+
+      noctalia-shell ipc call colorScheme set macOS >/dev/null 2>&1 || true
+      noctalia-shell list 2>/dev/null \
+        | sed -n 's/^  Config path: //p' \
+        | while IFS= read -r config_path; do
+            noctalia-shell -p "$config_path" ipc call colorScheme set macOS >/dev/null 2>&1 || true
+          done
+    '';
+  };
+  macOSColorScheme = {
+    dark = {
+      mPrimary = "#0a84ff";
+      mOnPrimary = "#ffffff";
+      mSecondary = "#64d2ff";
+      mOnSecondary = "#0b0b0f";
+      mTertiary = "#bf5af2";
+      mOnTertiary = "#ffffff";
+      mError = "#ff453a";
+      mOnError = "#ffffff";
+      mSurface = "#1c1c1e";
+      mOnSurface = "#f5f5f7";
+      mSurfaceVariant = "#2c2c2e";
+      mOnSurfaceVariant = "#aeaeb2";
+      mOutline = "#48484a";
+      mShadow = "#000000";
+      mHover = "#3a3a3c";
+      mOnHover = "#f5f5f7";
+      terminal = {
+        normal = {
+          black = "#1c1c1e";
+          red = "#ff453a";
+          green = "#32d74b";
+          yellow = "#ffd60a";
+          blue = "#0a84ff";
+          magenta = "#bf5af2";
+          cyan = "#64d2ff";
+          white = "#f5f5f7";
+        };
+        bright = {
+          black = "#636366";
+          red = "#ff6961";
+          green = "#5ee578";
+          yellow = "#ffe55c";
+          blue = "#409cff";
+          magenta = "#d184ff";
+          cyan = "#8fe6ff";
+          white = "#ffffff";
+        };
+        foreground = "#f5f5f7";
+        background = "#1c1c1e";
+        selectionFg = "#ffffff";
+        selectionBg = "#3a3a3c";
+        cursorText = "#1c1c1e";
+        cursor = "#0a84ff";
+      };
+    };
+    light = {
+      mPrimary = "#007aff";
+      mOnPrimary = "#ffffff";
+      mSecondary = "#5ac8fa";
+      mOnSecondary = "#1d1d1f";
+      mTertiary = "#af52de";
+      mOnTertiary = "#ffffff";
+      mError = "#ff3b30";
+      mOnError = "#ffffff";
+      mSurface = "#f5f5f7";
+      mOnSurface = "#1d1d1f";
+      mSurfaceVariant = "#ffffff";
+      mOnSurfaceVariant = "#6e6e73";
+      mOutline = "#d2d2d7";
+      mShadow = "#d1d1d6";
+      mHover = "#e8e8ed";
+      mOnHover = "#1d1d1f";
+      terminal = {
+        normal = {
+          black = "#f5f5f7";
+          red = "#ff3b30";
+          green = "#28cd41";
+          yellow = "#ffcc00";
+          blue = "#007aff";
+          magenta = "#af52de";
+          cyan = "#5ac8fa";
+          white = "#1d1d1f";
+        };
+        bright = {
+          black = "#8e8e93";
+          red = "#ff453a";
+          green = "#32d74b";
+          yellow = "#ffd60a";
+          blue = "#0a84ff";
+          magenta = "#bf5af2";
+          cyan = "#64d2ff";
+          white = "#000000";
+        };
+        foreground = "#1d1d1f";
+        background = "#f5f5f7";
+        selectionFg = "#1d1d1f";
+        selectionBg = "#d2d2d7";
+        cursorText = "#ffffff";
+        cursor = "#007aff";
+      };
+    };
+  };
+  macOSColorSchemeFile = pkgs.writeText "macOS-noctalia-colorscheme.json" (
+    builtins.toJSON macOSColorScheme
+  );
   initialNoctaliaSettings = {
     general = {
       radiusRatio = 0.2;
@@ -46,6 +184,7 @@ in
 
   home.packages = with pkgs; [
     brightnessctl
+    noctaliaMacOSTheme
     playerctl
     wl-clipboard
     xwayland-satellite
@@ -76,6 +215,7 @@ in
 
     seed_json_file "$HOME/.config/noctalia/settings.json" "${initialNoctaliaSettingsFile}"
     seed_json_file "$HOME/.cache/noctalia/wallpapers.json" "${initialNoctaliaWallpapersFile}"
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm0644 "${macOSColorSchemeFile}" "$HOME/.config/noctalia/colorschemes/macOS/macOS.json"
   '';
 
   xdg.configFile."autostart/v2rayN.desktop" = {
@@ -239,12 +379,15 @@ in
         Mod+P { ${noctalia ''"sessionMenu" "toggle"''}; }
         Mod+Shift+L { ${noctalia ''"lockScreen" "lock"''}; }
         Mod+Shift+C { spawn "cursor-locator"; }
+        Mod+Shift+T { spawn "noctalia-macos-theme"; }
+        Alt+Tab       { focus-window-next; }
+        Alt+Shift+Tab { focus-window-previous; }
 
         Mod+Q { close-window; }
         Mod+M { quit; }
         Mod+F { fullscreen-window; }
         Mod+Shift+W { toggle-window-floating; }
-        Mod+Tab { focus-workspace-down; }
+        Mod+Tab { toggle-overview; }
         Mod+O { toggle-overview; }
 
         Mod+H { focus-column-left; }

@@ -9,7 +9,10 @@
       size = 14;
     };
 
-    shellIntegration.enableZshIntegration = true;
+    shellIntegration = {
+      enableFishIntegration = true;
+      enableZshIntegration = true;
+    };
     themeFile = "SpaceGray";
 
     settings = {
