@@ -380,14 +380,14 @@ in
         Mod+Shift+L { ${noctalia ''"lockScreen" "lock"''}; }
         Mod+Shift+C { spawn "cursor-locator"; }
         Mod+Shift+T { spawn "noctalia-macos-theme"; }
-        Alt+Tab       { focus-window-next; }
-        Alt+Shift+Tab { focus-window-previous; }
+
 
         Mod+Q { close-window; }
         Mod+M { quit; }
         Mod+F { fullscreen-window; }
         Mod+Shift+W { toggle-window-floating; }
         Mod+Tab { toggle-overview; }
+        Alt+Tab { toggle-overview; }
         Mod+O { toggle-overview; }
 
         Mod+H { focus-column-left; }

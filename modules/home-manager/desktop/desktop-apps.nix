@@ -36,8 +36,8 @@
     bluez-tools
     polychromatic
     razergenie
-    kooha
     mousai
+    flameshot
   ];
 
   services.flatpak.packages = [
