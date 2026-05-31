@@ -1,0 +1,280 @@
+{
+  "workbench.colorTheme": "Catppuccin Mocha",
+  "workbench.iconTheme": "catppuccin-mocha",
+  "workbench.sideBar.location": "right",
+  "workbench.startupEditor": "none",
+  "workbench.tree.enableStickyScroll": true,
+  "workbench.tree.indent": 14,
+  "workbench.tree.renderIndentGuides": "none",
+  "workbench.list.smoothScrolling": true,
+  "workbench.statusBar.visible": false,
+  "workbench.layoutControl.enabled": false,
+  "workbench.editor.empty.hint": "hidden",
+  "workbench.reduceMotion": "on",
+  "workbench.colorCustomizations": {
+    "editorCursor.foreground": "#FF64FB",
+    "editorCursor.background": "#ffffff",
+    "editor.selectionBackground": "#BC00B5"
+  },
+  "editor.fontFamily": "'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', monospace",
+  "editor.fontWeight": "600",
+  "editor.fontSize": 24,
+  "editor.fontLigatures": true,
+  "editor.lineHeight": 1,
+  "editor.minimap.enabled": false,
+  "editor.smoothScrolling": true,
+  "editor.formatOnSave": true,
+  "editor.overviewRulerBorder": false,
+  "editor.inlineSuggest.enabled": true,
+  "editor.inlineSuggest.suppressSuggestions": true,
+  "editor.guides.bracketPairs": true,
+  "editor.foldingHighlight": true,
+  "editor.stickyScroll.enabled": false,
+  "editor.inlayHints.enabled": "on",
+  "editor.cursorBlinking": "phase",
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.cursorSurroundingLines": 5,
+  "editor.cursorWidth": 3,
+  "editor.cursorStyle": "line",
+  "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font Mono",
+  "terminal.integrated.fontWeight": "600",
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.cursorStyle": "line",
+  "terminal.integrated.cursorStyleInactive": "line",
+  "terminal.integrated.stickyScroll.enabled": false,
+  "terminal.integrated.enablePersistentSessions": false,
+  "terminal.integrated.persistentSessionReviveProcess": "never",
+  "terminal.integrated.smoothScrolling": true,
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
+  "terminal.integrated.gpuAcceleration": "off",
+  "terminal.external.linuxExec": "ghostty",
+  "git.autofetch": true,
+  "git.openRepositoryInParentFolders": "always",
+  "git.confirmSync": false,
+  "git.mergeEditor": true,
+  "git.detectSubmodules": true,
+  "git.ignoreLegacyWarning": true,
+  "git.allowForcePush": true,
+  "git.confirmForcePush": false,
+  "git.enableCommitSigning": true,
+  "githubPullRequests.createOnPublishBranch": "never",
+  "githubPullRequests.pushBranch": "always",
+  "diffEditor.hideUnchangedRegions.enabled": true,
+  "diffEditor.codeLens": true,
+  "diffEditor.ignoreTrimWhitespace": false,
+  "scm.diffDecorations": "all",
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "go.mod": "go.sum, .golangci.yml, .golangci.yaml",
+    "*.go": "${capture}_test.go, ${capture}_mock.go"
+  },
+  "explorer.compactFolders": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.confirmDelete": false,
+  "explorer.confirmPasteNative": false,
+  "breadcrumbs.enabled": false,
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "tailwindCSS.includeLanguages": {
+    "html": "html",
+    "javascript": "javascript",
+    "javascriptreact": "javascript",
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  "typescript.tsdk": "web/node_modules/typescript/lib",
+  "[go]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "golang.go",
+    "editor.formatOnSave": true
+  },
+  "go.formatTool": "gofumpt",
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": [
+    "--fast"
+  ],
+  "go.lintOnSave": "file",
+  "go.toolsManagement.autoUpdate": false,
+  "go.useLanguageServer": true,
+  "go.enableCodeLens": {
+    "runtest": true
+  },
+  "go.testFlags": [
+    "-v",
+    "-count=1"
+  ],
+  "go.testTimeout": "120s",
+  "gopls": {
+    "analyses": {
+      "nilness": true,
+      "unusedparams": true,
+      "unusedwrite": true,
+      "useany": true
+    },
+    "completeUnimported": true,
+    "gofumpt": true,
+    "staticcheck": true,
+    "usePlaceholders": true,
+    "matcher": "fuzzy"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true
+    },
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[nix]": {
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "jnoortheen.nix-ide"
+  },
+  "nix.enableLanguageServer": true,
+  "nix.serverPath": "nil",
+  "nix.serverSettings": {
+    "nil": {
+      "formatting": {
+        "command": [
+          "nixfmt"
+        ]
+      }
+    }
+  },
+  "docker.extension.enableComposeLanguageServer": false,
+  "docker.extension.dockerEngineAvailabilityPrompt": false,
+  "security.workspace.trust.untrustedFiles": "open",
+  "redhat.telemetry.enabled": false,
+  "errorLens.onSave": true,
+  "sqltools.connections": [],
+  "chat.commandCenter.enabled": false,
+  "chat.mcp.gallery.enabled": true,
+  "chat.viewSessions.enabled": false,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+  "makefile.configureOnOpen": true,
+  "remote.SSH.remotePlatform": {
+    "127.0.0.1": "linux",
+    "VM": "linux"
+  },
+  "remote.extensionKind": {
+    "openai.chatgpt": [
+      "workspace",
+      "ui"
+    ],
+    "golang.go": "ui",
+    "ms-azuretools.vscode-docker": [
+      "ui",
+      "workspace"
+    ],
+    "github.vscode-github-actions": "ui",
+    "GitHub.vscode-pull-request-github": "ui",
+    "eamodio.gitlens": "ui",
+    "GitHub.copilot": "ui"
+  },
+  "settingsSync.ignoredSettings": [
+    "editor.fontFamily",
+    "editor.fontWeight",
+    "terminal.integrated.fontFamily",
+    "terminal.integrated.fontWeight",
+    "terminal.integrated.profiles.windows",
+    "terminal.integrated.defaultProfile.windows",
+    "terminal.integrated.env.windows",
+    "terminal.external.linuxExec",
+    "custom-ui-style.electron",
+    "custom-ui-style.font.sansSerif",
+    "vscode_custom_css.imports",
+    "vs-kubernetes",
+    "http.proxy",
+    "http.proxySupport",
+    "remote.extensionKind",
+    "remote.SSH.remotePlatform",
+    "window.titleBarStyle",
+    "window.customTitleBarVisibility",
+    "workbench.sideBar.location",
+    "workbench.colorCustomizations"
+  ],
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true,
+    ".claude/rules": true,
+    "~/.copilot/instructions": true,
+    "~/.claude/rules": true,
+    "/tmp/postman-collections-post-response.instructions.md": true,
+    "/tmp/postman-collections-pre-request.instructions.md": true,
+    "/tmp/postman-folder-post-response.instructions.md": true,
+    "/tmp/postman-folder-pre-request.instructions.md": true,
+    "/tmp/postman-http-request-post-response.instructions.md": true,
+    "/tmp/postman-http-request-pre-request.instructions.md": true
+  },
+  "window.menuBarVisibility": "compact",
+  "vscode_custom_css.imports": [
+    "file:///home/snrx/.vscode/extensions/brandonkirbyson.vscode-animations-2.0.7/dist/updateHandler.js"
+  ],
+  "terminal.integrated.ignoreProcessNames": [
+    "starship",
+    "oh-my-posh",
+    "bash",
+    "fish"
+  ],
+  "terminal.integrated.profiles.linux": {
+    "bash": {
+      "path": "bash",
+      "icon": "terminal-bash"
+    },
+    "zsh": {
+      "path": "zsh"
+    },
+    "fish": {
+      "path": "/home/snrx/.nix-profile/bin/fish"
+    },
+    "tmux": {
+      "path": "tmux",
+      "icon": "terminal-tmux"
+    },
+    "pwsh": {
+      "path": "pwsh",
+      "icon": "terminal-powershell"
+    }
+  },
+  "terminal.integrated.defaultProfile.linux": "fish",
+  "workbench.activityBar.location": "top"
+}

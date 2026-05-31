@@ -5,7 +5,7 @@ let
   nord0 = mkLiteral "#2E3440";
   nord1 = mkLiteral "#3B4252";
   nord6 = mkLiteral "#ECEFF4";
-  selected-font = "HarmonyOS Sans SC bold 12";
+  selected-font = "JetBrainsMono Nerd Font SemiBold 12";
 
 in
 {

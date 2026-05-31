@@ -22,7 +22,6 @@
     godot
     v2rayn
     xray
-    vscode
     freecad
     synology-drive-client
     localsend # Cross-platform FOSS alternative to Airdrop
@@ -31,14 +30,14 @@
     losslesscut-bin # Lossless video/audio editing
     textpieces # Text processing utility
     identity # Image and videos comparison tool
+    fsearch # Fast indexed file search, similar to Everything
     piper # Mouse configuration app
     bluez
     bluez-tools
     polychromatic
     razergenie
-    kooha
     mousai
-    yandex-music
+    flameshot
   ];
 
   services.flatpak.packages = [

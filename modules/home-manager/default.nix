@@ -10,6 +10,7 @@
     ./shell/shell.nix
     # Desktop
     ./desktop/desktop-apps.nix
+    ./desktop/idle.nix
     ./desktop/mpv.nix
     ./desktop/nemo.nix
     ./desktop/niri-noctalia.nix
@@ -17,11 +18,13 @@
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
     # Apps
-    ./apps/brave.nix
+    ./apps/helium.nix
     ./apps/discord.nix
     ./apps/librewolf.nix
     # Development
     ./dev-tools.nix
     ./go-dev.nix
+    ./vscodium.nix
+    ./lazyvim.nix
   ];
 }

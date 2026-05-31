@@ -31,5 +31,4 @@
     };
 
   };
-  environment.shells = [ pkgs.zsh ];
 }

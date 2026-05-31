@@ -4,16 +4,19 @@
   programs.kitty = {
     enable = true;
     font = {
-      package = pkgs.nerd-fonts.fira-code;
-      name = "FiraCode Nerd Font Mono";
+      package = pkgs.nerd-fonts.jetbrains-mono;
+      name = "JetBrainsMono Nerd Font Mono";
       size = 14;
     };
 
-    shellIntegration.enableZshIntegration = true;
+    shellIntegration = {
+      enableFishIntegration = true;
+      enableZshIntegration = true;
+    };
     themeFile = "SpaceGray";
 
     settings = {
-      bold_font = "auto";
+      bold_font = "JetBrainsMono Nerd Font Mono SemiBold";
       italic_font = "auto";
       bold_italic_font = "auto";
       background_opacity = 0.3;

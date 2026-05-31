@@ -1,7 +1,6 @@
 {
   imports = [
     ./bootloader.nix
-    ./neovim.nix
     ./graphics.nix
     ./niri.nix
     ./sddm.nix

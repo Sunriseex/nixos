@@ -4,6 +4,7 @@
   home.packages = with pkgs; [
     vim
     gcc
+    gnumake
     git
     shfmt
     nixfmt
@@ -23,5 +24,19 @@
     nix-prefetch-github
     codex
     nodejs
+    pnpm
+    yarn
+    bun
+    playwright-test
+    prettier
+    prettierd
+    eslint_d
+    typescript-language-server
+    vscode-langservers-extracted
+    postgresql_17
   ];
+
+  home.sessionVariables = {
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = "${pkgs.playwright-driver.browsers}/chromium-1200/chrome-linux64/chrome";
+  };
 }

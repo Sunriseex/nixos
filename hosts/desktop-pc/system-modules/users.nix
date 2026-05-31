@@ -20,13 +20,18 @@
       "plugdev"
       "docker"
       "vboxusers"
+      "render"
     ];
 
-    shell = pkgs.zsh;
+    shell = pkgs.fish;
 
   };
 
-  environment.shells = with pkgs; [ zsh ];
+  services.seatd.enable = true;
+  environment.shells = with pkgs; [
+    fish
+    zsh
+  ];
 
   # Sets trusted users
   nix.settings.trusted-users = [
