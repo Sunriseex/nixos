@@ -81,7 +81,8 @@
   # Automatize garbage collection
   nix.gc = {
     automatic = true;
-    dates = "3days";
+    dates = "weekly";
+    options = "--delete-older-than 7d";
   };
 
   # Flatpak
