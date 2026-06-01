@@ -20,7 +20,7 @@
     ./desktop/virtualbox-docker-host.nix
     # Apps
     ./apps/helium.nix
-#    ./apps/discord.nix
+    ./apps/discord.nix
     ./apps/librewolf.nix
     # Development
     ./dev-tools.nix
