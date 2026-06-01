@@ -20,6 +20,11 @@
     kdePackages.kdenlive # Editing software
     obs-studio
     godot
+    prismlauncher # Minecraft launcher
+    awakened-poe-trade # Path of Exile trade overlay
+    rusty-path-of-building # Path of Building
+    heroic # Epic Games/GOG launcher
+    umu-launcher # Unified launcher for Proton outside Steam
     v2rayn
     xray
     freecad
@@ -43,6 +48,14 @@
   services.flatpak.packages = [
     {
       appId = "com.github.d4nj1.tlpui";
+      origin = "flathub";
+    }
+    {
+      appId = "net.lutris.Lutris";
+      origin = "flathub";
+    }
+    {
+      appId = "com.usebottles.bottles";
       origin = "flathub";
     }
   ];

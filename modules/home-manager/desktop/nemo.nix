@@ -26,10 +26,10 @@
 
   dconf = {
     settings = {
-      # Set Kitty as default Nemo terminal
+      # Set Ghostty as default Nemo terminal
       "org/cinnamon/desktop/default-applications/terminal" = {
-        exec = "kitty";
-        exec-arg = "--working-directory";
+        exec = "ghostty";
+        exec-arg = "--working-directory=";
       };
 
       "org.cinnamon.desktop.keybindings" = {

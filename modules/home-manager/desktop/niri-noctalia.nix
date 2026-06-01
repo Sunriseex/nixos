@@ -344,11 +344,6 @@ in
         open-floating true
     }
 
-    window-rule {
-        match app-id=r#"librewolf$"# title="^Picture-in-Picture$"
-        open-floating true
-    }
-
     layer-rule {
         match namespace="^noctalia-wallpaper*"
         place-within-backdrop true
