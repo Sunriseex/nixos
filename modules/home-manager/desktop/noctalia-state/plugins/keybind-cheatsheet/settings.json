@@ -1,0 +1,412 @@
+{
+  "cheatsheetData": [
+    {
+      "title": "Noctalia",
+      "binds": [
+        {
+          "keys": "Super + S",
+          "desc": "Control Center",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "S"
+        },
+        {
+          "keys": "Super + Comma",
+          "desc": "Settings",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "Comma"
+        },
+        {
+          "keys": "Super + P",
+          "desc": "Session Menu",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "P"
+        },
+        {
+          "keys": "Super + Shift + L",
+          "desc": "Lock Screen",
+          "_verb": "spawn",
+          "_mods": "Super+Shift",
+          "_mainKey": "L"
+        },
+        {
+          "keys": "Vol Up",
+          "desc": "Volume Up",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioRaiseVolume"
+        },
+        {
+          "keys": "Vol Down",
+          "desc": "Volume Down",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioLowerVolume"
+        },
+        {
+          "keys": "Mute",
+          "desc": "Mute Output",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioMute"
+        },
+        {
+          "keys": "Bright Up",
+          "desc": "Brightness Up",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86MonBrightnessUp"
+        },
+        {
+          "keys": "Bright Down",
+          "desc": "Brightness Down",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86MonBrightnessDown"
+        }
+      ]
+    },
+    {
+      "title": "Applications",
+      "binds": [
+        {
+          "keys": "Super + Return",
+          "desc": "Run: ghostty",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "Return"
+        },
+        {
+          "keys": "Super + V",
+          "desc": "Run: code",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "V"
+        },
+        {
+          "keys": "Super + B",
+          "desc": "Run: helium",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "B"
+        },
+        {
+          "keys": "Super + E",
+          "desc": "Run: nemo",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "E"
+        },
+        {
+          "keys": "Super + Space",
+          "desc": "Run: vicinae",
+          "_verb": "spawn",
+          "_mods": "Super",
+          "_mainKey": "Space"
+        },
+        {
+          "keys": "Super + Shift + C",
+          "desc": "Run: cursor-locator",
+          "_verb": "spawn",
+          "_mods": "Super+Shift",
+          "_mainKey": "C"
+        },
+        {
+          "keys": "Super + Shift + T",
+          "desc": "Run: noctalia-macos-theme",
+          "_verb": "spawn",
+          "_mods": "Super+Shift",
+          "_mainKey": "T"
+        },
+        {
+          "keys": "Shift + Vol Up",
+          "desc": "Run: wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%+",
+          "_verb": "spawn-sh",
+          "_mods": "Shift",
+          "_mainKey": "XF86AudioRaiseVolume"
+        },
+        {
+          "keys": "Shift + Vol Down",
+          "desc": "Run: wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-",
+          "_verb": "spawn-sh",
+          "_mods": "Shift",
+          "_mainKey": "XF86AudioLowerVolume"
+        },
+        {
+          "keys": "Shift + Mute",
+          "desc": "Run: wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+          "_verb": "spawn-sh",
+          "_mods": "Shift",
+          "_mainKey": "XF86AudioMute"
+        },
+        {
+          "keys": "Next",
+          "desc": "Run: playerctl",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioNext"
+        },
+        {
+          "keys": "Pause",
+          "desc": "Run: playerctl",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioPause"
+        },
+        {
+          "keys": "Play",
+          "desc": "Run: playerctl",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioPlay"
+        },
+        {
+          "keys": "Prev",
+          "desc": "Run: playerctl",
+          "_verb": "spawn",
+          "_mods": "",
+          "_mainKey": "XF86AudioPrev"
+        }
+      ]
+    },
+    {
+      "title": "Window Management",
+      "binds": [
+        {
+          "keys": "Super + Q",
+          "desc": "Close Window",
+          "_verb": "close-window",
+          "_mods": "Super",
+          "_mainKey": "Q"
+        },
+        {
+          "keys": "Super + F",
+          "desc": "Fullscreen Window",
+          "_verb": "fullscreen-window",
+          "_mods": "Super",
+          "_mainKey": "F"
+        }
+      ]
+    },
+    {
+      "title": "Column Navigation",
+      "binds": [
+        {
+          "keys": "Super + H",
+          "desc": "Focus Column Left",
+          "_verb": "focus-column-left",
+          "_mods": "Super",
+          "_mainKey": "H"
+        },
+        {
+          "keys": "Super + L",
+          "desc": "Focus Column Right",
+          "_verb": "focus-column-right",
+          "_mods": "Super",
+          "_mainKey": "L"
+        }
+      ]
+    },
+    {
+      "title": "Window Focus",
+      "binds": [
+        {
+          "keys": "Super + J",
+          "desc": "Focus Window Down",
+          "_verb": "focus-window-down",
+          "_mods": "Super",
+          "_mainKey": "J"
+        },
+        {
+          "keys": "Super + K",
+          "desc": "Focus Window Up",
+          "_verb": "focus-window-up",
+          "_mods": "Super",
+          "_mainKey": "K"
+        }
+      ]
+    },
+    {
+      "title": "Workspace Navigation",
+      "binds": [
+        {
+          "keys": "Super + Tab",
+          "desc": "Focus Workspace Down",
+          "_verb": "focus-workspace-down",
+          "_mods": "Super",
+          "_mainKey": "Tab"
+        },
+        {
+          "keys": "Super + 1-9",
+          "desc": "Focus Workspace 1-9",
+          "_verb": "focus-workspace",
+          "_mods": "Super",
+          "_mainKey": "1-9",
+          "_merged": true
+        },
+        {
+          "keys": "Super + 0",
+          "desc": "Focus Workspace 10",
+          "_verb": "focus-workspace",
+          "_mods": "Super",
+          "_mainKey": "0"
+        },
+        {
+          "keys": "Super + WheelScrollDown",
+          "desc": "Focus Workspace Down",
+          "_verb": "focus-workspace-down",
+          "_mods": "Super",
+          "_mainKey": "WheelScrollDown"
+        },
+        {
+          "keys": "Super + WheelScrollUp",
+          "desc": "Focus Workspace Up",
+          "_verb": "focus-workspace-up",
+          "_mods": "Super",
+          "_mainKey": "WheelScrollUp"
+        }
+      ]
+    },
+    {
+      "title": "Move Columns",
+      "binds": [
+        {
+          "keys": "Super + Left",
+          "desc": "Move Column Left",
+          "_verb": "move-column-left",
+          "_mods": "Super",
+          "_mainKey": "Left"
+        },
+        {
+          "keys": "Super + Right",
+          "desc": "Move Column Right",
+          "_verb": "move-column-right",
+          "_mods": "Super",
+          "_mainKey": "Right"
+        },
+        {
+          "keys": "Super + Shift + 1-9",
+          "desc": "Move Column To Workspace 1-9",
+          "_verb": "move-column-to-workspace",
+          "_mods": "Super+Shift",
+          "_mainKey": "1-9",
+          "_merged": true
+        },
+        {
+          "keys": "Super + Shift + 0",
+          "desc": "Move Column To Workspace 10",
+          "_verb": "move-column-to-workspace",
+          "_mods": "Super+Shift",
+          "_mainKey": "0"
+        }
+      ]
+    },
+    {
+      "title": "Move Windows",
+      "binds": [
+        {
+          "keys": "Super + Up",
+          "desc": "Move Window Up",
+          "_verb": "move-window-up",
+          "_mods": "Super",
+          "_mainKey": "Up"
+        },
+        {
+          "keys": "Super + Down",
+          "desc": "Move Window Down",
+          "_verb": "move-window-down",
+          "_mods": "Super",
+          "_mainKey": "Down"
+        }
+      ]
+    },
+    {
+      "title": "Screenshots",
+      "binds": [
+        {
+          "keys": "PrtSc",
+          "desc": "Screenshot",
+          "_verb": "screenshot",
+          "_mods": "",
+          "_mainKey": "Print"
+        },
+        {
+          "keys": "Shift + PrtSc",
+          "desc": "Screenshot Window",
+          "_verb": "screenshot-window",
+          "_mods": "Shift",
+          "_mainKey": "Print"
+        }
+      ]
+    },
+    {
+      "title": "System",
+      "binds": [
+        {
+          "keys": "Super + M",
+          "desc": "Quit",
+          "_verb": "quit",
+          "_mods": "Super",
+          "_mainKey": "M"
+        }
+      ]
+    },
+    {
+      "title": "Other",
+      "binds": [
+        {
+          "keys": "Super + Shift + W",
+          "desc": "Toggle Window Floating",
+          "_verb": "toggle-window-floating",
+          "_mods": "Super+Shift",
+          "_mainKey": "W"
+        },
+        {
+          "keys": "Super + O",
+          "desc": "Toggle Overview",
+          "_verb": "toggle-overview",
+          "_mods": "Super",
+          "_mainKey": "O"
+        }
+      ]
+    }
+  ],
+  "detectedCompositor": "niri",
+  "windowWidth": 1400,
+  "windowHeight": 850,
+  "autoHeight": false,
+  "columnCount": 3,
+  "modKeyVariable": "$mod",
+  "hyprlandConfigPath": "~/.config/hypr/hyprland.conf",
+  "hyprlandLuaConfigPath": "~/.config/hypr/hyprland.lua",
+  "hyprlandParserMode": "auto",
+  "niriConfigPath": "~/.config/niri/config.kdl",
+  "mangoConfigPath": "~/.config/mango/config.conf",
+  "mergeSequentialBinds": true,
+  "showUndescribedBinds": true,
+  "splitLargeWorkspaceCategory": true,
+  "workspaceSplitThreshold": 12,
+  "keyColorAlt": "#FF6B6B",
+  "keyColorXF86": "#4ECDC4",
+  "keyColorPrint": "#95E1D3",
+  "keyColorNumeric": "#A8DADC",
+  "keyColorMouse": "#F38181",
+  "keyColorSuper": "",
+  "keyColorCtrl": "",
+  "keyColorShift": "",
+  "keyColorDefault": "#6C757D",
+  "keyLabelColor": "#FFFFFF",
+  "keyTextSuper": "",
+  "keyTextCtrl": "",
+  "keyTextShift": "",
+  "keyTextAlt": "",
+  "keyTextXF86": "",
+  "keyTextPrint": "",
+  "keyTextNumeric": "",
+  "keyTextMouse": "",
+  "keyTextDefault": "",
+  "descriptionTextColor": "",
+  "bindOverrides": {}
+}

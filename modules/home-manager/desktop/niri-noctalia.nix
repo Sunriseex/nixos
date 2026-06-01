@@ -10,6 +10,10 @@ let
     path = ../../../wallpapers/dark-bright-mountains.jpg;
     name = "dark-bright-mountains.jpg";
   };
+  noctaliaState = builtins.path {
+    path = ./noctalia-state;
+    name = "noctalia-state";
+  };
 
   noctalia = command: ''spawn "noctalia-shell" "ipc" "call" ${command}'';
   noctaliaMacOSTheme = pkgs.writeShellApplication {
@@ -186,11 +190,17 @@ in
     brightnessctl
     noctaliaMacOSTheme
     playerctl
+    rsync
     wl-clipboard
     xwayland-satellite
   ];
 
   home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/noctalia"
+    $DRY_RUN_CMD ${pkgs.rsync}/bin/rsync -a "${noctaliaState}/" "$HOME/.config/noctalia/"
+    $DRY_RUN_CMD ${pkgs.findutils}/bin/find "$HOME/.config/noctalia" -type d -exec ${pkgs.coreutils}/bin/chmod 0755 {} +
+    $DRY_RUN_CMD ${pkgs.findutils}/bin/find "$HOME/.config/noctalia" -type f -exec ${pkgs.coreutils}/bin/chmod 0644 {} +
+
     seed_json_file() {
       file="$1"
       seed="$2"
@@ -217,6 +227,8 @@ in
     seed_json_file "$HOME/.cache/noctalia/wallpapers.json" "${initialNoctaliaWallpapersFile}"
     $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm0644 "${macOSColorSchemeFile}" "$HOME/.config/noctalia/colorschemes/macOS/macOS.json"
   '';
+
+  xdg.configFile."niri/noctalia.kdl".source = ./niri-extra/noctalia.kdl;
 
   xdg.configFile."autostart/v2rayN.desktop" = {
     force = true;

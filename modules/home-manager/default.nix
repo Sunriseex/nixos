@@ -8,6 +8,7 @@
     ./shell/ghostty.nix
     ./shell/starship.nix
     ./shell/shell.nix
+    ./ssh/client-config.nix
     # Desktop
     ./desktop/desktop-apps.nix
     ./desktop/idle.nix
