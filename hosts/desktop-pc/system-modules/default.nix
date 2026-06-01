@@ -1,6 +1,8 @@
 {
   imports = [
+    ./bluetooth.nix
     ./fonts.nix
+    ./gaming.nix
     ./networking.nix
     ./timezone.nix
     ./keyboard.nix

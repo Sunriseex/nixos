@@ -4,10 +4,10 @@
     ./shell/cli-tools.nix
     ./shell/fastfetch.nix
     ./shell/git.nix
-    ./shell/kitty.nix
     ./shell/ghostty.nix
     ./shell/starship.nix
     ./shell/shell.nix
+    ./ssh/client-config.nix
     # Desktop
     ./desktop/desktop-apps.nix
     ./desktop/idle.nix
@@ -20,7 +20,6 @@
     # Apps
     ./apps/helium.nix
     ./apps/discord.nix
-    ./apps/librewolf.nix
     # Development
     ./dev-tools.nix
     ./go-dev.nix
