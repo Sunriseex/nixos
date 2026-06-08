@@ -276,5 +276,6 @@
     }
   },
   "terminal.integrated.defaultProfile.linux": "fish",
-  "workbench.activityBar.location": "top"
+  "workbench.activityBar.location": "top",
+  "git.suggestSmartCommit": false
 }

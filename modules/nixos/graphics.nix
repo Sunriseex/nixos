@@ -9,7 +9,6 @@
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.blacklistedKernelModules = [ "nouveau" ];
 
-
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = false;
@@ -18,11 +17,6 @@
     package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
 
   };
-
-  hardware.opengl = {
-    enable = true;
-    };
-
 
   boot.kernelParams = [ "nvidia-drm.modeset=1" ];
 

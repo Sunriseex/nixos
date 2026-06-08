@@ -66,6 +66,8 @@ in
     razergenie
     mousai
     flameshot
+    wf-recorder
+    protonplus
   ];
 
   services.flatpak.packages = [

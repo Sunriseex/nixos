@@ -144,13 +144,13 @@
   };
 
   fileSystems."/mnt/data" = {
-    device = "/dev/disk/by-uuid/39300D621B85831C";
-    fsType = "ntfs";
+    device = "/dev/disk/by-uuid/1fc4b1b7-e4ac-434f-bb60-d9a887edd6c7";
+    fsType = "btrfs";
     options = [
-      "rw"
-      "uid=1000"
-      "gid=100"
-      "umask=0022"
+      "subvol=@data"
+      "compress=zstd:3"
+      "noatime"
+      "nofail"
     ];
   };
 

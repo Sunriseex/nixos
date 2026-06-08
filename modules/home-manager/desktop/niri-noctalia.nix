@@ -184,7 +184,12 @@ in
     inputs.noctalia.homeModules.default
   ];
 
-  programs.noctalia-shell.enable = true;
+  programs.noctalia-shell = {
+    enable = true;
+    settings = {
+      timeFormat = "12h";
+    };
+  };
 
   home.packages = with pkgs; [
     brightnessctl
@@ -257,7 +262,7 @@ in
         keyboard {
             xkb {
                 layout "us,ru"
-                options "grp:alt_shift_toggle"
+                options "grp:alt_shift_toggle,grp:caps_toggle"
             }
 
             numlock
@@ -270,6 +275,7 @@ in
 
         focus-follows-mouse
     }
+
 
     output "HDMI-A-1" {
         mode "1920x1080"
@@ -295,6 +301,10 @@ in
         mode "1920x1080"
         scale 1
         position x=-1920 y=0
+    }
+
+    workspace "wuthering-waves" {
+        open-on-output "HDMI-A-1"
     }
 
     layout {
@@ -342,6 +352,13 @@ in
     window-rule {
         match app-id=r#"helium$"# title="^Picture-in-Picture$"
         open-floating true
+    }
+
+    window-rule {
+        match app-id="^client-win64-shipping\\.exe$" title="^Wuthering Waves"
+        open-on-output "HDMI-A-1"
+        open-on-workspace "wuthering-waves"
+        open-fullscreen true
     }
 
     layer-rule {
