@@ -5,5 +5,6 @@
     ./niri.nix
     ./sddm.nix
     ./razer.nix
+    ./obs-studio.nix
   ];
 }
