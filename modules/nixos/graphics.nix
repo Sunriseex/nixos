@@ -1,8 +1,15 @@
 {
   config,
+  pkgs,
   ...
 }:
 {
+  environment.systemPackages = with pkgs; [
+  vulkan-tools
+  mesa-demos
+  nvtopPackages.nvidia
+];
+
 
   hardware.graphics.enable = true;
 
@@ -12,9 +19,9 @@
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = false;
-    open = false;
+    open = true;
     nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+    branch = "production";
 
   };
 

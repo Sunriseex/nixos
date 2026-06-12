@@ -56,6 +56,9 @@
   programs.ssh = {
     startAgent = true;
     extraConfig = ''
+      Host *
+        AddKeysToAgent yes
+
       Host VirtualBox
         AddKeysToAgent yes
         IdentityFile ~/.ssh/id_ed25519
@@ -152,6 +155,32 @@
       "noatime"
       "nofail"
     ];
+  };
+
+  # Memory pressure protection
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 16 * 1024;
+    }
+  ];
+
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 10;
+  };
+
+  services.earlyoom = {
+    enable = true;
+    enableNotifications = true;
+
+    freeMemThreshold = 10;
+    freeSwapThreshold = 80;
   };
 
   system.stateVersion = "25.05"; # Do not change
