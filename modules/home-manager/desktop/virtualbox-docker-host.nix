@@ -326,4 +326,32 @@ in
     };
   };
 
+  systemd.user.sockets.vbox-host-proxy-forward = {
+    Unit = {
+      Description = "Host-only forwarder for VM access to local proxy";
+    };
+
+    Socket = {
+      ListenStream = "${linuxHostOnlyAddress}:10808";
+      NoDelay = true;
+    };
+
+    Install = {
+      WantedBy = [ "sockets.target" ];
+    };
+  };
+
+  systemd.user.services.vbox-host-proxy-forward = {
+    Unit = {
+      Description = "Forward VM host-only proxy traffic to local proxy";
+      Requires = [ "vbox-host-proxy-forward.socket" ];
+    };
+
+    Service = {
+      ExecStart = "/run/current-system/systemd/lib/systemd/systemd-socket-proxyd 127.0.0.1:10808";
+      PrivateTmp = true;
+      NoNewPrivileges = true;
+    };
+  };
+
 }

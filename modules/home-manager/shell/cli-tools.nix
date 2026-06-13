@@ -21,5 +21,6 @@
     gamemode
     tlp
     speedtest-cli
+    keychain
   ];
 }

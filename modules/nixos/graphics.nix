@@ -1,28 +1,32 @@
 {
   config,
+  pkgs,
   ...
 }:
 {
+  environment.systemPackages = with pkgs; [
+  vulkan-tools
+  mesa-demos
+  nvtopPackages.nvidia
+];
 
-  hardware.graphics.enable = true;
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
 
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.blacklistedKernelModules = [ "nouveau" ];
 
-
   hardware.nvidia = {
     modesetting.enable = true;
     powerManagement.enable = false;
-    open = false;
+    open = true;
     nvidiaSettings = true;
-    package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+    branch = "production";
 
   };
-
-  hardware.opengl = {
-    enable = true;
-    };
-
 
   boot.kernelParams = [ "nvidia-drm.modeset=1" ];
 

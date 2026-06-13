@@ -13,5 +13,6 @@
     ./zsh.nix
     ./cpu.nix
     ./docker.nix
+    ./ollama.nix
   ];
 }

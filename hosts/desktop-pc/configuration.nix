@@ -56,6 +56,9 @@
   programs.ssh = {
     startAgent = true;
     extraConfig = ''
+      Host *
+        AddKeysToAgent yes
+
       Host VirtualBox
         AddKeysToAgent yes
         IdentityFile ~/.ssh/id_ed25519
@@ -106,7 +109,7 @@
 
   environment.systemPackages = with pkgs; [
     home-manager
-    inputs.agenix.packages.${pkgs.system}.default
+    inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
     python3
     nftables
     jq
@@ -144,14 +147,40 @@
   };
 
   fileSystems."/mnt/data" = {
-    device = "/dev/disk/by-uuid/39300D621B85831C";
-    fsType = "ntfs";
+    device = "/dev/disk/by-uuid/1fc4b1b7-e4ac-434f-bb60-d9a887edd6c7";
+    fsType = "btrfs";
     options = [
-      "rw"
-      "uid=1000"
-      "gid=100"
-      "umask=0022"
+      "subvol=@data"
+      "compress=zstd:3"
+      "noatime"
+      "nofail"
     ];
+  };
+
+  # Memory pressure protection
+  zramSwap = {
+    enable = true;
+    memoryPercent = 50;
+    algorithm = "zstd";
+  };
+
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 16 * 1024;
+    }
+  ];
+
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 10;
+  };
+
+  services.earlyoom = {
+    enable = true;
+    enableNotifications = true;
+
+    freeMemThreshold = 10;
+    freeSwapThreshold = 80;
   };
 
   system.stateVersion = "25.05"; # Do not change

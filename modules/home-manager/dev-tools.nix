@@ -3,6 +3,7 @@
 
   home.packages = with pkgs; [
     vim
+    air
     gcc
     gnumake
     git
@@ -34,6 +35,8 @@
     typescript-language-server
     vscode-langservers-extracted
     postgresql_17
+    claude-code
+    opencode
   ];
 
   home.sessionVariables = {
