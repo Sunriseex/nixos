@@ -1,9 +1,10 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 
 {
   # Enable GTK
   gtk = {
     enable = true;
+    gtk4.theme = config.gtk.theme;
     theme = {
       package = pkgs.nordic;
       name = "Nordic";

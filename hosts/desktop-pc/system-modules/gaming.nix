@@ -67,5 +67,7 @@ in
     mangohud
     protonup-qt-unproxied
     protonplus-unproxied
+    wineWow64Packages.stable
+    dxvk
   ];
 }
