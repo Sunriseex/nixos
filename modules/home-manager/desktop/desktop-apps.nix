@@ -41,7 +41,6 @@ in
     telegram-desktop
     blueman
     kdePackages.kdenlive # Editing software
-    obs-studio
     godot
     prismlauncher # Minecraft launcher
     awakened-poe-trade # Path of Exile trade overlay
