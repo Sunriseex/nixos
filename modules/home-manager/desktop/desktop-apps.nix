@@ -5,26 +5,7 @@
 }:
 
 let
-  rusty-path-of-building-unproxied = pkgs.symlinkJoin {
-    name = "rusty-path-of-building-unproxied";
-    paths = [ pkgs.rusty-path-of-building ];
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    postBuild = ''
-      wrapProgram "$out/bin/rusty-path-of-building" \
-        --unset http_proxy \
-        --unset https_proxy \
-        --unset ftp_proxy \
-        --unset rsync_proxy \
-        --unset all_proxy \
-        --unset no_proxy \
-        --unset HTTP_PROXY \
-        --unset HTTPS_PROXY \
-        --unset FTP_PROXY \
-        --unset RSYNC_PROXY \
-        --unset ALL_PROXY \
-        --unset NO_PROXY
-    '';
-  };
+  localPkgs = import ../../../pkgs pkgs;
 in
 
 {
@@ -43,8 +24,8 @@ in
     kdePackages.kdenlive # Editing software
     godot
     prismlauncher # Minecraft launcher
-    awakened-poe-trade # Path of Exile trade overlay
-    rusty-path-of-building-unproxied # Path of Building
+    localPkgs.awakened-poe-trade # Path of Exile trade overlay
+    localPkgs.pob-poe2 # Path of Building PoE2 (via Wine)
     heroic # Epic Games/GOG launcher
     umu-launcher # Unified launcher for Proton outside Steam
     v2rayn
