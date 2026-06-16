@@ -17,6 +17,7 @@
     ./desktop/rofi.nix
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
+    ./desktop/check-updates.nix
     # Apps
     ./apps/helium.nix
     ./apps/discord.nix

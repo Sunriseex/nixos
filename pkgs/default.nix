@@ -1,5 +1,6 @@
-# Custom packages, that can be defined similarly to ones from nixpkgs
-# You can build them using 'nix build .#example'
 pkgs: {
-  # example = pkgs.callPackage ./example { };
+  awakened-poe-trade = pkgs.callPackage ./awakened-poe-trade { };
+  pob-poe2 = pkgs.callPackage ./pob-poe2 {
+    wine = pkgs.wineWow64Packages.stable;
+  };
 }
