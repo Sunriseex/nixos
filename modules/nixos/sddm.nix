@@ -2,22 +2,14 @@
 let
   sddmWestonIni = pkgs.writeText "sddm-weston.ini" ''
     [output]
+    name=DP-1
+    mode=preferred
+    position=0,0
+
+    [output]
     name=HDMI-A-1
     mode=preferred
-    position=0,0
-
-    [output]
-    name=HDMI-1
-    mode=preferred
-    position=0,0
-
-    [output]
-    name=DVI-D-1
-    mode=off
-
-    [output]
-    name=DVI-1
-    mode=off
+    position=-1920,0
   '';
 in
 {

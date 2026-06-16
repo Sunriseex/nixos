@@ -6,5 +6,6 @@
     ./sddm.nix
     ./razer.nix
     ./obs-studio.nix
+    ./input-remapper.nix
   ];
 }

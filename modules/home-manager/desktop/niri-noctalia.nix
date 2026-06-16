@@ -169,7 +169,7 @@ let
     defaultWallpaper = "${wallpaper}";
     wallpapers = {
       "HDMI-A-1" = "${wallpaper}";
-      "DVI-D-1" = "${wallpaper}";
+      "DP-1" = "${wallpaper}";
     };
   };
   initialNoctaliaSettingsFile = pkgs.writeText "noctalia-initial-settings.json" (
@@ -277,34 +277,22 @@ in
     }
 
 
+    output "DP-1" {
+        mode "1920x1080@165.003"
+        scale 1
+        position x=0 y=0
+        focus-at-startup
+        variable-refresh-rate
+    }
+
     output "HDMI-A-1" {
-        mode "1920x1080"
-        scale 1
-        position x=0 y=0
-        focus-at-startup
-    }
-
-    output "HDMI-1" {
-        mode "1920x1080"
-        scale 1
-        position x=0 y=0
-        focus-at-startup
-    }
-
-    output "DVI-D-1" {
-        mode "1920x1080"
-        scale 1
-        position x=-1920 y=0
-    }
-
-    output "DVI-1" {
         mode "1920x1080"
         scale 1
         position x=-1920 y=0
     }
 
     workspace "wuthering-waves" {
-        open-on-output "HDMI-A-1"
+        open-on-output "DP-1"
     }
 
     layout {
@@ -356,7 +344,7 @@ in
 
     window-rule {
         match app-id="^client-win64-shipping\\.exe$" title="^Wuthering Waves"
-        open-on-output "HDMI-A-1"
+        open-on-output "DP-1"
         open-on-workspace "wuthering-waves"
         open-fullscreen true
     }

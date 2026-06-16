@@ -63,6 +63,7 @@ in
     bluez-tools
     polychromatic
     razergenie
+    input-remapper
     mousai
     flameshot
     wf-recorder
