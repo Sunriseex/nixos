@@ -14,6 +14,7 @@ let
     path = ./noctalia-state;
     name = "noctalia-state";
   };
+  gameOutput = "DP-1";
 
   noctalia = command: ''spawn "noctalia-shell" "ipc" "call" ${command}'';
   noctaliaMacOSTheme = pkgs.writeShellApplication {
@@ -277,7 +278,7 @@ in
     }
 
 
-    output "DP-1" {
+    output "${gameOutput}" {
         mode "1920x1080@165.003"
         scale 1
         position x=0 y=0
@@ -292,7 +293,7 @@ in
     }
 
     workspace "wuthering-waves" {
-        open-on-output "DP-1"
+        open-on-output "${gameOutput}"
     }
 
     layout {
@@ -344,7 +345,7 @@ in
 
     window-rule {
         match app-id="^client-win64-shipping\\.exe$" title="^Wuthering Waves"
-        open-on-output "DP-1"
+        open-on-output "${gameOutput}"
         open-on-workspace "wuthering-waves"
         open-fullscreen true
     }
