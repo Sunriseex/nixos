@@ -350,6 +350,13 @@ in
         open-fullscreen true
     }
 
+    window-rule {
+        match app-id="^steam_app_2694490$" title="^Path of Exile 2$"
+        open-on-output "${gameOutput}"
+        open-on-workspace "wuthering-waves"
+        open-fullscreen true
+    }
+
     layer-rule {
         match namespace="^noctalia-wallpaper*"
         place-within-backdrop true
