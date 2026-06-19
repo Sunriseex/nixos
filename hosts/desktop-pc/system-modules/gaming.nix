@@ -1,24 +1,44 @@
 { pkgs, ... }:
 
 let
+  unsetProxyEnv = ''
+    --unset http_proxy \
+    --unset https_proxy \
+    --unset ftp_proxy \
+    --unset rsync_proxy \
+    --unset all_proxy \
+    --unset no_proxy \
+    --unset HTTP_PROXY \
+    --unset HTTPS_PROXY \
+    --unset FTP_PROXY \
+    --unset RSYNC_PROXY \
+    --unset ALL_PROXY \
+    --unset NO_PROXY
+  '';
+
+  steam-unproxied = pkgs.steam.override {
+    extraEnv = {
+      http_proxy = "";
+      https_proxy = "";
+      ftp_proxy = "";
+      rsync_proxy = "";
+      all_proxy = "";
+      no_proxy = "";
+      HTTP_PROXY = "";
+      HTTPS_PROXY = "";
+      FTP_PROXY = "";
+      RSYNC_PROXY = "";
+      ALL_PROXY = "";
+      NO_PROXY = "";
+    };
+  };
+
   protonup-qt-unproxied = pkgs.symlinkJoin {
     name = "protonup-qt-unproxied";
     paths = [ pkgs.protonup-qt ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
-      wrapProgram "$out/bin/protonup-qt" \
-        --unset http_proxy \
-        --unset https_proxy \
-        --unset ftp_proxy \
-        --unset rsync_proxy \
-        --unset all_proxy \
-        --unset no_proxy \
-        --unset HTTP_PROXY \
-        --unset HTTPS_PROXY \
-        --unset FTP_PROXY \
-        --unset RSYNC_PROXY \
-        --unset ALL_PROXY \
-        --unset NO_PROXY
+      wrapProgram "$out/bin/protonup-qt" ${unsetProxyEnv}
     '';
   };
 
@@ -27,19 +47,7 @@ let
     paths = [ pkgs.protonplus ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
-      wrapProgram "$out/bin/protonplus" \
-        --unset http_proxy \
-        --unset https_proxy \
-        --unset ftp_proxy \
-        --unset rsync_proxy \
-        --unset all_proxy \
-        --unset no_proxy \
-        --unset HTTP_PROXY \
-        --unset HTTPS_PROXY \
-        --unset FTP_PROXY \
-        --unset RSYNC_PROXY \
-        --unset ALL_PROXY \
-        --unset NO_PROXY
+      wrapProgram "$out/bin/protonplus" ${unsetProxyEnv}
     '';
   };
 in
@@ -47,6 +55,7 @@ in
 {
   programs.steam = {
     enable = true;
+    package = steam-unproxied;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
     gamescopeSession.enable = true;
