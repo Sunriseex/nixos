@@ -1,7 +1,6 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 {
-  # Enable sound with pipewire
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -29,31 +28,24 @@
             ];
           };
         };
-        # Отключаем неиспользуемые аудиоустройства
-        # Оставляем только: G435 → вывод (наушники), fifine → ввод (микрофон)
         "10-alsa-rules" = {
           "monitor.alsa.rules" = [
-            # NVIDIA HDMI (GP106 High Definition Audio Controller)
             {
               matches = [{ "device.name" = "alsa_card.pci-0000_05_00.1"; }];
               apply_properties = { "device.disabled" = true; };
             }
-            # S/PDIF + аналоговый вход материнской платы
             {
               matches = [{ "device.name" = "alsa_card.pci-0000_07_00.4"; }];
               apply_properties = { "device.disabled" = true; };
             }
-            # C922 Pro Stream Webcam — микрофон
             {
               matches = [{ "device.name" = "~alsa_card.usb-046d_C922_Pro_Stream_Webcam*"; }];
               apply_properties = { "device.disabled" = true; };
             }
-            # fifine — отключаем выход (оставляем только микрофон)
             {
               matches = [{ "node.name" = "alsa_output.usb-3142_fifine_Microphone-00.analog-stereo"; }];
               apply_properties = { "node.disabled" = true; };
             }
-            # G435 — отключаем микрофон наушников (оставляем только вывод)
             {
               matches = [{ "node.name" = "alsa_input.usb-Logitech_G_series_G435_Wireless_Gaming_Headset_202105190004-00.mono-fallback"; }];
               apply_properties = { "node.disabled" = true; };
@@ -63,6 +55,21 @@
       };
     };
   };
+
+  systemd.user.services.pw-duck = {
+    after = [ "pipewire-session-manager.service" "graphical-session.target" ];
+    wants = [ "pipewire-session-manager.service" ];
+    description = "pw-duck audio ducking";
+    path = [ pkgs.pipewire pkgs.pulseaudio ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "on-failure";
+      RestartSec = 3;
+      ExecStart = "${inputs.pw-duck.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/pw-duck";
+    };
+    wantedBy = [ "default.target" ];
+  };
+
   services.pulseaudio = {
     enable = false;
   };
@@ -72,5 +79,6 @@
     pulseaudio
     pwvucontrol
     wireplumber
+    inputs.pw-duck.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }

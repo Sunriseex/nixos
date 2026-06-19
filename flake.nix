@@ -44,6 +44,11 @@
       url = "github:oxcl/nix-flake-helium-browser";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    pw-duck = {
+      url = "github:geri1701/pw-duck";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
