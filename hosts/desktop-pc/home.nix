@@ -9,7 +9,13 @@
     ../../modules/home-manager
     inputs.agenix.homeManagerModules.default
     inputs.helium-browser.homeModules.default
+    inputs.open-design.homeManagerModules.default
   ];
+
+  services.open-design = {
+    enable = true;
+    autoStart = true;
+  };
 
   home = {
     username = "snrx";

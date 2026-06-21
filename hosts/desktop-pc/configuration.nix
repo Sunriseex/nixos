@@ -181,6 +181,10 @@
 
     freeMemThreshold = 10;
     freeSwapThreshold = 80;
+
+    extraArgs = [
+      "--ignore" "^(VirtualBoxVM|VBoxHeadless|qemu-system-x86|qemu-system-x86_64)$"
+    ];
   };
 
   system.stateVersion = "25.05"; # Do not change

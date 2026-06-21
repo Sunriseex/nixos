@@ -49,6 +49,11 @@
       url = "github:geri1701/pw-duck";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    open-design = {
+      url = "github:nexu-io/open-design";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -59,6 +64,7 @@
       nix-flatpak,
       silent-sddm,
       agenix,
+      open-design,
       ...
     }@inputs:
     let
