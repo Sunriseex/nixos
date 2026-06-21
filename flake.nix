@@ -83,6 +83,11 @@
           specialArgs = { inherit inputs; };
           modules = [
             ./hosts/desktop-pc/configuration.nix
+            {
+              nixpkgs.overlays = [
+                (final: prev: (import ./pkgs final))
+              ];
+            }
           ];
         };
       };

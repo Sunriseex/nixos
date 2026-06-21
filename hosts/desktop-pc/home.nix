@@ -27,6 +27,7 @@
     dconf
     pkgs.remmina
     vicinae
+    pkgs.llm-checker
   ];
   # gtk.gtk4.theme = config.gtk.theme;
   programs.neovim.withRuby = true;
