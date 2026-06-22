@@ -18,6 +18,7 @@
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
     ./desktop/check-updates.nix
+    ./desktop/calendar.nix
     # Apps
     ./apps/helium.nix
     ./apps/discord.nix

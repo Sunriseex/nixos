@@ -5,4 +5,6 @@ pkgs: {
   };
 
   llm-checker = pkgs.callPackage ./llm-checker { };
+
+  ssh-mcp = pkgs.callPackage ../scripts/ssh-mcp { };
 }

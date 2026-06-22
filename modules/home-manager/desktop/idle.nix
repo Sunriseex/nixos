@@ -1,6 +1,18 @@
 { pkgs, ... }:
 
 let
+  idleLock = pkgs.writeShellApplication {
+    name = "idle-lock";
+    runtimeInputs = with pkgs; [
+      noctalia-shell
+    ];
+    text = ''
+      set -euo pipefail
+
+      noctalia-shell ipc call lockScreen lock
+    '';
+  };
+
   idleSuspendVisuals = pkgs.writeShellApplication {
     name = "idle-suspend-visuals";
     runtimeInputs = with pkgs; [
@@ -56,6 +68,7 @@ in
   home.packages = [
     pkgs.highlight-pointer
     cursorLocator
+    idleLock
     idleSuspendVisuals
     idleResumeVisuals
   ];
@@ -63,6 +76,10 @@ in
   services.swayidle = {
     enable = true;
     timeouts = [
+      {
+        timeout = 600;
+        command = "${idleLock}/bin/idle-lock";
+      }
       {
         timeout = 900;
         command = "${idleSuspendVisuals}/bin/idle-suspend-visuals";

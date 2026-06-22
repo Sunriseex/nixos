@@ -98,5 +98,7 @@
     "$HOME/scripts/system"
   ];
   # Let Home Manager install and manage itself.
+  programs.calendar.enable = true;
+
   programs.home-manager.enable = true;
 }

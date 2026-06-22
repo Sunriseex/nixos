@@ -95,6 +95,28 @@
                     "showMemoryAsPercent": false,
                     "showMemoryUsage": true,
                     "showNetworkStats": false,
+                    "showSwapUsage": true,
+                    "textColor": "none",
+                    "useMonospaceFont": true,
+                    "usePadding": false
+                },
+                {
+                    "compactMode": false,
+                    "diskPath": "/mnt/data",
+                    "iconColor": "none",
+                    "id": "SystemMonitor",
+                    "showCpuCores": false,
+                    "showCpuFreq": false,
+                    "showCpuTemp": false,
+                    "showCpuUsage": false,
+                    "showDiskAvailable": false,
+                    "showDiskUsage": true,
+                    "showDiskUsageAsPercent": true,
+                    "showGpuTemp": false,
+                    "showLoadAverage": false,
+                    "showMemoryAsPercent": false,
+                    "showMemoryUsage": false,
+                    "showNetworkStats": false,
                     "showSwapUsage": false,
                     "textColor": "none",
                     "useMonospaceFont": true,
@@ -131,6 +153,12 @@
                         "workDuration": 25
                     },
                     "id": "plugin:pomodoro"
+                },
+                {
+                    "defaultSettings": {
+                        "alarms": []
+                    },
+                    "id": "plugin:alarm"
                 }
             ],
             "left": [
@@ -598,9 +626,9 @@
         "enableBatteryToast": false,
         "enableKeyboardLayoutToast": true,
         "enableMarkdown": false,
-        "enableMediaToast": false,
+        "enableMediaToast": true,
         "enabled": true,
-        "location": "top",
+        "location": "bottom_right",
         "lowUrgencyDuration": 3,
         "monitors": [
         ],

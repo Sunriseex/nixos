@@ -13,7 +13,7 @@
       cursor-opacity = 1;
       selection-background = "#F5E0DC";
       selection-foreground = "#ECEFF4";
-      enable_auto_terminfo = true;
+      shell-integration-features = "ssh-terminfo";
     };
 
   };

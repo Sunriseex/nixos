@@ -1,0 +1,27 @@
+{
+  "id": "alarm",
+  "name": "Alarm",
+  "version": "1.0.0",
+  "minNoctaliaVersion": "4.0.0",
+  "author": "snrx",
+  "license": "MIT",
+  "repository": "",
+  "description": "Set time-based alarms and reminders.",
+  "tags": [
+    "Bar",
+    "Productivity"
+  ],
+  "entryPoints": {
+    "main": "Main.qml",
+    "barWidget": "BarWidget.qml",
+    "settings": "Settings.qml"
+  },
+  "dependencies": {
+    "plugins": []
+  },
+  "metadata": {
+    "defaultSettings": {
+      "alarms": []
+    }
+  }
+}
