@@ -101,6 +101,15 @@ get_freed() {
 
 declare -A _fs_before
 
+# Check if a mount point contains a specific sub-path
+has_path() {
+  local target="$1"
+  local mount="$2"
+  local fstype
+  fstype=$(findmnt -n -o FSTYPE "$mount" 2>/dev/null) || return 1
+  findmnt -n -o TARGET -t "$fstype" 2>/dev/null | grep -qxF "$target"
+}
+
 # === Confirmation ===
 confirm() {
   local prompt="$1"
@@ -228,6 +237,10 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+# Validate numeric args
+[[ "$keep" =~ ^[0-9]+$ ]] || { echo "error: --keep must be a number, got '$keep'" >&2; exit 1; }
+[[ "$journal_days" =~ ^[0-9]+$ ]] || { echo "error: --journal-days must be a number, got '$journal_days'" >&2; exit 1; }
+
 # === Main ===
 main() {
   local mounts
@@ -263,7 +276,7 @@ main() {
     else
       local sys_mount="/"
       for m in "${mounts[@]}"; do
-        if df "$m" 2>/dev/null | grep -q "/nix"; then sys_mount="$m"; break; fi
+        if [[ "$m" == "/" ]] || has_path "/nix" "$m"; then sys_mount="$m"; break; fi
       done
       echo; log_header "System Nix GC"
       if [[ "$keep" -gt 0 ]]; then
@@ -284,7 +297,7 @@ main() {
     else
       local user_mount="/home"
       for m in "${mounts[@]}"; do
-        if echo "$HOME" | grep -q "^$m"; then user_mount="$m"; break; fi
+        if [[ "$m" == "/" ]] || [[ "$HOME" == "$m"* ]]; then user_mount="$m"; break; fi
       done
       echo; log_header "User Nix GC"
       if [[ "$keep" -gt 0 ]]; then
@@ -308,7 +321,7 @@ main() {
     ensure_sudo
     local nix_mount="/"
     for m in "${mounts[@]}"; do
-      df "$m" 2>/dev/null | grep -q "/nix" && { nix_mount="$m"; break; } || true
+      [[ "$m" == "/" ]] || has_path "/nix" "$m" && { nix_mount="$m"; break; } || true
     done
     run_step "Nix store optimise" "$nix_mount" sudo nix store optimise || any_failed=1
   fi
@@ -318,7 +331,7 @@ main() {
     ensure_sudo
     local log_mount="/"
     for m in "${mounts[@]}"; do
-      df "$m" 2>/dev/null | grep -q "/var/log" && { log_mount="$m"; break; } || true
+      [[ "$m" == "/" ]] || has_path "/var/log" "$m" && { log_mount="$m"; break; } || true
     done
     run_step "Journal vacuum (${journal_days}d)" "$log_mount" sudo journalctl --vacuum-time="${journal_days}d" || any_failed=1
   fi
@@ -414,7 +427,7 @@ main() {
         for m in "${mounts[@]}"; do
           echo "$HOME" | grep -q "^$m" && { thumb_mount="$m"; break; } || true
         done
-        run_step "Thumbnail cache" "$thumb_mount" rm -rf "$HOME/.cache/thumbnails/"* 2>/dev/null || true
+        run_step "Thumbnail cache" "$thumb_mount" bash -c 'rm -rf "$HOME/.cache/thumbnails/"*' 2>/dev/null || true
       fi
     fi
 
@@ -425,19 +438,35 @@ main() {
         for m in "${mounts[@]}"; do
           echo "$HOME" | grep -q "^$m" && { trash_mount="$m"; break; } || true
         done
-        run_step "Home Trash" "$trash_mount" rm -rf "$HOME/.local/share/Trash/"* 2>/dev/null || true
+        run_step "Home Trash" "$trash_mount" bash -c 'rm -rf "$HOME/.local/share/Trash/"*' 2>/dev/null || true
       fi
     fi
 
     # --- 13. /tmp/nix-build-* ---
-    if ls /tmp/nix-build-* &>/dev/null; then
+    if compgen -G '/tmp/nix-build-*' &>/dev/null; then
       if confirm "Remove stale nix build directories in /tmp?"; then
         ensure_sudo
         local tmp_mount=""
         for m in "${mounts[@]}"; do
-          df /tmp 2>/dev/null | grep -q "$m" && { tmp_mount="$m"; break; } || true
+          [[ -d "$m" ]] || continue
+          local tmp_fstype
+          local mnt_fstype
+          tmp_fstype=$(findmnt -n -o FSTYPE /tmp 2>/dev/null) || continue
+          mnt_fstype=$(findmnt -n -o FSTYPE "$m" 2>/dev/null) || continue
+          if [[ "$tmp_fstype" == "$mnt_fstype" ]] && has_path "/tmp" "$m"; then tmp_mount="$m"; break; fi
         done
-        run_step "Nix build temp" "$tmp_mount" sudo rm -rf /tmp/nix-build-* 2>/dev/null || true
+        echo; log_header "Nix build temp"
+        local cleaned=0
+        for d in /tmp/nix-build-*; do
+          [[ -d "$d" ]] || continue
+          if lsof +D "$d" &>/dev/null; then
+            echo "  ${YELLOW}skipping active:${NC} $d"
+          else
+            run_step "  rm ${d##*/}" "$tmp_mount" sudo rm -rf "$d" || true
+            cleaned=1
+          fi
+        done
+        [[ "$cleaned" -eq 0 ]] && log_ok "no stale build dirs"
       fi
     fi
 

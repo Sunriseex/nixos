@@ -10,7 +10,7 @@
     Service = {
       Type = "oneshot";
       ExecStart = ''
-        ${pkgs.bash}/bin/bash -c '${pkgs.bash}/bin/bash ~/.local/bin/disk-cleanup.sh --yes --docker --aggressive --quiet 2>&1 | ${pkgs.systemd}/bin/systemd-cat -t disk-cleanup'
+        ${pkgs.bash}/bin/bash -c '/home/snrx/.local/bin/disk-cleanup.sh --yes --docker --aggressive --quiet 2>&1 | ${pkgs.systemd}/bin/systemd-cat -t disk-cleanup'
       '';
       Environment = "PATH=/run/wrappers/bin:/run/current-system/sw/bin:${pkgs.libnotify}/bin";
       Nice = 19;
