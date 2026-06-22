@@ -81,6 +81,18 @@
     Defaults timestamp_type=global
   '';
 
+  security.sudo.extraRules = [
+    { users = [ "snrx" ];
+      commands = [
+        { command = "/run/current-system/sw/bin/nix-collect-garbage"; options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/journalctl";         options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/docker";             options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/nix";                options = [ "NOPASSWD" ]; }
+        { command = "/run/current-system/sw/bin/btrfs";              options = [ "NOPASSWD" ]; }
+      ];
+    }
+  ];
+
   # Automatize garbage collection
   nix.gc = {
     automatic = true;
