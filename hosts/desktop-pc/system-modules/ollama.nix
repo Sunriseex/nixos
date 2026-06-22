@@ -2,6 +2,7 @@
 {
   services.ollama = {
     enable = true;
+    package = pkgs.ollama-cuda;
   };
 
   services.open-webui = {
@@ -9,6 +10,6 @@
   };
 
   environment.systemPackages = with pkgs; [
-    llama-cpp
+    (llama-cpp.override { cudaSupport = true; })
   ];
 }
