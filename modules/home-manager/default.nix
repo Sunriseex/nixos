@@ -19,6 +19,7 @@
     ./desktop/virtualbox-docker-host.nix
     ./desktop/check-updates.nix
     ./desktop/calendar.nix
+    ./desktop/disk-clean.nix
     # Apps
     ./apps/helium.nix
     ./apps/discord.nix

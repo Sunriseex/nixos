@@ -22,7 +22,9 @@ let
     nix-clear = "sudo nix-collect-garbage -d";
     disk-clean = "~/.local/bin/disk-cleanup.sh";
     disk-clean-plan = "~/.local/bin/disk-cleanup.sh --dry-run";
-    disk-clean-all = "~/.local/bin/disk-cleanup.sh --docker";
+    disk-clean-all = "~/.local/bin/disk-cleanup.sh --docker --aggressive";
+    disk-clean-auto = "~/.local/bin/disk-cleanup.sh --yes";
+    disk-clean-data = "~/.local/bin/disk-cleanup.sh --target /mnt/data";
     cd = "z";
     # claude and opencode defined as fish functions below (avoid alias recursion)
     record-screen = "record-screen";
