@@ -13,3 +13,9 @@ obsidian-backup.sh
 
 
 AGENTS.md
+
+# Agent skills (installed locally in ~/.agents/skills/)
+.agents/
+
+# Agent lockfile (managed by opencode globally)
+skills-lock.json
