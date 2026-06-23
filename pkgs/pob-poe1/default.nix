@@ -15,7 +15,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://github.com/PathOfBuildingCommunity/PathOfBuilding/releases/download/v${finalAttrs.version}/PathOfBuildingCommunity-Portable.zip";
-    hash = "sha256-UB/JVvc7jdGKKrIDN8vbfQbWQYs01H9hRAgjTiUjhcQ=";
+    hash = "sha256-M52r6iLFVkNr0fgHYkBe0rkQBQDrbpL43nxKz3LPNUg=";
   };
 
   nativeBuildInputs = [ unzip copyDesktopItems ];
