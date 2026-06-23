@@ -29,13 +29,23 @@ if [ -f "$apt_pkg" ]; then
   fi
 fi
 
+# pob-poe1
+pob1_pkg="$REPO_DIR/pkgs/pob-poe1/default.nix"
+if [ -f "$pob1_pkg" ]; then
+  current_pob1="$(extract_version "$pob1_pkg")"
+  latest_pob1="$(fetch_latest_tag "PathOfBuildingCommunity/PathOfBuilding" || true)"
+  if [ -n "$latest_pob1" ] && [ "$current_pob1" != "$latest_pob1" ]; then
+    updates+=("Path of Building PoE1: $current_pob1 → $latest_pob1")
+  fi
+fi
+
 # pob-poe2
-pob_pkg="$REPO_DIR/pkgs/pob-poe2/default.nix"
-if [ -f "$pob_pkg" ]; then
-  current_pob="$(extract_version "$pob_pkg")"
-  latest_pob="$(fetch_latest_tag "PathOfBuildingCommunity/PathOfBuilding-PoE2" || true)"
-  if [ -n "$latest_pob" ] && [ "$current_pob" != "$latest_pob" ]; then
-    updates+=("Path of Building PoE2: $current_pob → $latest_pob")
+pob2_pkg="$REPO_DIR/pkgs/pob-poe2/default.nix"
+if [ -f "$pob2_pkg" ]; then
+  current_pob2="$(extract_version "$pob2_pkg")"
+  latest_pob2="$(fetch_latest_tag "PathOfBuildingCommunity/PathOfBuilding-PoE2" || true)"
+  if [ -n "$latest_pob2" ] && [ "$current_pob2" != "$latest_pob2" ]; then
+    updates+=("Path of Building PoE2: $current_pob2 → $latest_pob2")
   fi
 fi
 
