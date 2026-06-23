@@ -18,6 +18,7 @@
     ./desktop/styling.nix
     ./desktop/virtualbox-docker-host.nix
     ./desktop/check-updates.nix
+    ./desktop/poe-weekly-news.nix
     ./desktop/calendar.nix
     ./desktop/disk-clean.nix
     # Apps

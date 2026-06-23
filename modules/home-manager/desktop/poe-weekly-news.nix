@@ -20,7 +20,7 @@
     };
 
     Timer = {
-      OnCalendar = "Sun 12:00:00";
+      OnCalendar = "Mon 12:00:00";
       Persistent = true;
       RandomizedDelaySec = "30m";
     };

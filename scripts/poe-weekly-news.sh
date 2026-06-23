@@ -20,9 +20,7 @@ if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
 fi
 
 opencode run \
-  --allow-read \
-  --allow-write \
-  --allow-bash \
+  --dangerously-skip-permissions \
   "Найди свежие новости Path of Exile 1 за последнюю неделю.
 Источники: https://www.pathofexile.com/news и https://www.pathofexile.com/forum.
 
