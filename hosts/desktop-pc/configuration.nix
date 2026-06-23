@@ -127,6 +127,8 @@
     nftables
     jq
     vicinae
+    libimobiledevice
+    ifuse
   ];
 
   # Enabled services
@@ -137,6 +139,11 @@
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "no";
     };
+  };
+
+  services.usbmuxd = {
+    enable = true;
+    package = pkgs.usbmuxd2;
   };
 
   services.timesyncd = {
