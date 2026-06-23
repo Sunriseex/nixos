@@ -25,6 +25,7 @@ in
     godot
     prismlauncher # Minecraft launcher
     localPkgs.awakened-poe-trade # Path of Exile trade overlay
+    localPkgs.pob-poe1 # Path of Building PoE1 (via Wine)
     localPkgs.pob-poe2 # Path of Building PoE2 (via Wine)
     heroic # Epic Games/GOG launcher
     umu-launcher # Unified launcher for Proton outside Steam

@@ -9,6 +9,10 @@ echo "=== Updating awakened-poe-trade ==="
 nix-update --file "$SCRIPT_DIR/pkgs/awakened-poe-trade" --version=bump
 
 echo ""
+echo "=== Updating pob-poe1 ==="
+nix-update --file "$SCRIPT_DIR/pkgs/pob-poe1" --version=bump
+
+echo ""
 echo "=== Updating pob-poe2 ==="
 nix-update --file "$SCRIPT_DIR/pkgs/pob-poe2" --version=bump
 
