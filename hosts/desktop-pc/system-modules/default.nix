@@ -15,5 +15,6 @@
     ./cpu.nix
     ./docker.nix
     ./ollama.nix
+    ./faster-whisper.nix
   ];
 }
