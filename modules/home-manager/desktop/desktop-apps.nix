@@ -48,6 +48,14 @@ in
     input-remapper
     mousai
     flameshot
+    grim
+    slurp
+    (pkgs.writeShellScriptBin "flameshot-region" ''
+      set -e
+      tmp=$(mktemp /tmp/flameshot-XXXXXX.png)
+      ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" "$tmp"
+      ${pkgs.flameshot}/bin/flameshot open "$tmp"
+    '')
     wf-recorder
     protonplus
   ];

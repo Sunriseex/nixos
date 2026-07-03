@@ -444,7 +444,7 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { spawn "flameshot" "gui"; }
+        Print { spawn "flameshot-region"; }
         Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
