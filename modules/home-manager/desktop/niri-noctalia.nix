@@ -215,7 +215,7 @@ in
       dir="$HOME/Pictures/Screenshots"
       mkdir -p "$dir"
       file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
-      output=$(${pkgs.niri}/bin/niri msg -j outputs | ${pkgs.jq}/bin/jq -r '.[] | select(.is_focused) | .name')
+      output=$(${pkgs.niri}/bin/niri msg -j focused-output | ${pkgs.jq}/bin/jq -r '.name')
       ${pkgs.grim}/bin/grim -o "$output" "$file"
       ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
       ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
