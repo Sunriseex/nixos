@@ -199,17 +199,6 @@ in
     rsync
     wl-clipboard
     xwayland-satellite
-    (pkgs.writeShellScriptBin "flameshot-capture" ''
-      dir="$HOME/Pictures/Screenshots"
-      mkdir -p "$dir"
-      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
-      if ! ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" "$file"; then
-        ${pkgs.libnotify}/bin/notify-send "Screenshot" "Capture failed"
-        exit 1
-      fi
-      ${pkgs.libnotify}/bin/notify-send "Screenshot" "Opening in Flameshot..."
-      ${pkgs.flameshot}/bin/flameshot open "$file"
-    '')
   ];
 
   home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -455,7 +444,7 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { spawn "flameshot-capture"; }
+        Print { spawn "flameshot" "screen"; }
         Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
