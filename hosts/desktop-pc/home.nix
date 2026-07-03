@@ -31,11 +31,6 @@
   ];
   # gtk.gtk4.theme = config.gtk.theme;
 
-  xdg.configFile."flameshot/flameshot.ini".text = ''
-    [General]
-    useGrimAdapter=true
-  '';
-
   programs.neovim.withRuby = true;
   programs.neovim.withPython3 = true;
 

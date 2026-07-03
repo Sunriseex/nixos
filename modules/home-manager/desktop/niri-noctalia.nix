@@ -387,7 +387,6 @@ in
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
     spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord-proxied"
-    spawn-at-startup "flameshot"
 
     binds {
         Mod+Return { spawn "ghostty"; }
