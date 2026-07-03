@@ -387,6 +387,7 @@ in
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
     spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord-proxied"
+    spawn-at-startup "flameshot"
 
     binds {
         Mod+Return { spawn "ghostty"; }
@@ -444,8 +445,8 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { spawn "flameshot" "gui" "--use-grim-adapter"; }
-        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots" "--use-grim-adapter"; }
+        Print { spawn "flameshot" "gui"; }
+        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
