@@ -48,6 +48,9 @@ in
     input-remapper
     mousai
     flameshot
+    satty
+    grim
+    slurp
     wf-recorder
     protonplus
   ];
