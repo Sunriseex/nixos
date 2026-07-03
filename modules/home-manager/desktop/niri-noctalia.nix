@@ -444,8 +444,8 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { screenshot; }
-        Shift+Print { screenshot-window; }
+        Print { spawn "flameshot" "gui" "--use-grim-adapter"; }
+        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots" "--use-grim-adapter"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
