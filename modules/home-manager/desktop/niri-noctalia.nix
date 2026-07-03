@@ -211,6 +211,15 @@ in
           --copy-command "${pkgs.wl-clipboard}/bin/wl-copy" \
           --initial-tool arrow
     '')
+    (pkgs.writeShellScriptBin "screenshot-full" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+      output=$(${pkgs.niri}/bin/niri msg -j outputs | ${pkgs.jq}/bin/jq -r '.[] | select(.is_focused) | .name')
+      ${pkgs.grim}/bin/grim -o "$output" "$file"
+      ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
+      ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
+    '')
   ];
 
   home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -457,7 +466,7 @@ in
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
         Print { spawn "screenshot-annotate"; }
-        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
+        Shift+Print { spawn "screenshot-full"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
