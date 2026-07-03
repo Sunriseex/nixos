@@ -199,6 +199,23 @@ in
     rsync
     wl-clipboard
     xwayland-satellite
+    (pkgs.writeShellScriptBin "screenshot-region" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+      ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" "$file"
+      ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
+      ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
+    '')
+    (pkgs.writeShellScriptBin "screenshot-output" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+      output=$(${pkgs.niri}/bin/niri msg -j outputs | ${pkgs.jq}/bin/jq -r '.[] | select(.is_focused) | .name')
+      ${pkgs.grim}/bin/grim -o "$output" "$file"
+      ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
+      ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
+    '')
   ];
 
   home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -444,8 +461,8 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { spawn "flameshot-region"; }
-        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
+        Print { spawn "screenshot-region"; }
+        Shift+Print { spawn "screenshot-output"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
