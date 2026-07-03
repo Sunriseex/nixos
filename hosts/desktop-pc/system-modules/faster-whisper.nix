@@ -30,7 +30,7 @@ in {
     description = "Faster-Whisper STT server with CUDA";
     after = [ "docker.service" "network.target" ];
     requires = [ "docker.service" ];
-    wantedBy = [ "multi-user.target" ];
+    wantedBy = [ ]; # disabled — start manually: systemctl start faster-whisper
 
     preStart = ''
       ${pkgs.docker}/bin/docker rm -f faster-whisper 2>/dev/null || true

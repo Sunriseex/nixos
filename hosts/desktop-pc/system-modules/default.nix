@@ -10,7 +10,7 @@
     ./users.nix
     ./virtualbox-safe-power.nix
     ./virtualbox-host.nix
-    ./discord-udp-proxy.nix
+    ./discord-tun.nix
     ./zsh.nix
     ./cpu.nix
     ./docker.nix

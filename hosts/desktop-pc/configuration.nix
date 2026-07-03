@@ -123,7 +123,9 @@
   environment.systemPackages = with pkgs; [
     home-manager
     inputs.agenix.packages.${pkgs.stdenv.hostPlatform.system}.default
-    python3
+    (python3.withPackages (ps: with ps; [
+      psutil pandas numpy matplotlib requests beautifulsoup4 lxml rich aiohttp
+    ]))
     nftables
     jq
     vicinae
