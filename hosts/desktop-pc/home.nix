@@ -30,12 +30,14 @@
     pkgs.llm-checker
   ];
   # gtk.gtk4.theme = config.gtk.theme;
+
   programs.neovim.withRuby = true;
   programs.neovim.withPython3 = true;
 
   xdg = {
     enable = true;
     mimeApps = {
+      enable = true;
       defaultApplications = {
         # Images
         "image/png" = [ "qimgv.desktop" ];

@@ -199,6 +199,18 @@ in
     rsync
     wl-clipboard
     xwayland-satellite
+    (pkgs.writeShellScriptBin "screenshot-annotate" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" - | \
+        ${pkgs.satty}/bin/satty \
+          -f - \
+          --fullscreen \
+          --early-exit \
+          -o "$dir/%Y-%m-%d_%H-%M-%S.png" \
+          --copy-command "${pkgs.wl-clipboard}/bin/wl-copy" \
+          --initial-tool arrow
+    '')
   ];
 
   home.activation.noctaliaWritableState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -386,7 +398,7 @@ in
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
-    spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord"
+    spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord-proxied"
 
     binds {
         Mod+Return { spawn "ghostty"; }
@@ -444,8 +456,8 @@ in
         Mod+WheelScrollDown cooldown-ms=150 { focus-workspace-down; }
         Mod+WheelScrollUp cooldown-ms=150 { focus-workspace-up; }
 
-        Print { screenshot; }
-        Shift+Print { screenshot-window; }
+        Print { spawn "screenshot-annotate"; }
+        Shift+Print { spawn "flameshot" "full" "-p" "~/Pictures/Screenshots"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
