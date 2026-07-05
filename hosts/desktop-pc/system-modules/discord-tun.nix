@@ -1,16 +1,17 @@
 { pkgs, ... }:
 
 let
-  tunConfig = pkgs.writeText "discord-xray-tun.json" (builtins.toJSON {
+  xrayConfig = pkgs.writeText "discord-xray.json" (builtins.toJSON {
     log = { loglevel = "warning"; };
 
     inbounds = [{
-      tag = "tun-in";
-      protocol = "tun";
+      tag = "socks-in";
+      protocol = "socks";
+      listen = "127.0.0.1";
+      port = 10809;
       settings = {
-        address = "10.0.0.1";
-        mtu = 9000;
-        autoRoute = true;
+        auth = "noauth";
+        udp = true;
       };
       sniffing = {
         enabled = true;
@@ -44,53 +45,35 @@ let
       };
     }];
 
-    dns = {
-      servers = [
-        {
-          address = "https://1.1.1.1/dns-query";
-          skipFallback = true;
-        }
-      ];
-      tag = "dns";
-    };
-
     routing = {
-      domainStrategy = "IPOnDemand";
       rules = [{
         type = "field";
-        inboundTag = [ "tun-in" ];
+        inboundTag = [ "socks-in" ];
         outboundTag = "proxy";
       }];
     };
   });
 in {
-  systemd.services.discord-xray-tun = {
-    description = "xray TUN proxy for Discord (network namespace)";
+  systemd.services.discord-xray = {
+    description = "xray SOCKS5 proxy for Discord";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
 
     preStart = ''
-      ${pkgs.iproute2}/bin/ip netns add discord 2>/dev/null || true
-      mkdir -p /run/discord-xray-tun
-      cp ${tunConfig} /run/discord-xray-tun/config.json
+      mkdir -p /run/discord-xray
+      cp ${xrayConfig} /run/discord-xray/config.json
     '';
 
     script = ''
-      exec ${pkgs.iproute2}/bin/ip netns exec discord \
-        ${pkgs.xray}/bin/xray run -c /run/discord-xray-tun/config.json
-    '';
-
-    postStop = ''
-      ${pkgs.iproute2}/bin/ip netns del discord 2>/dev/null || true
+      exec ${pkgs.xray}/bin/xray run -c /run/discord-xray/config.json
     '';
 
     serviceConfig = {
-      RuntimeDirectory = "discord-xray-tun";
+      RuntimeDirectory = "discord-xray";
       RuntimeDirectoryMode = "0700";
       Restart = "on-failure";
       RestartSec = "3s";
-      CapabilityBoundingSet = [ "CAP_NET_ADMIN" "CAP_NET_RAW" "CAP_SYS_ADMIN" ];
-      AmbientCapabilities = [ "CAP_NET_ADMIN" "CAP_NET_RAW" "CAP_SYS_ADMIN" ];
+      DynamicUser = true;
       PrivateTmp = true;
       ProtectSystem = "strict";
       ProtectHome = true;
@@ -98,25 +81,13 @@ in {
     };
   };
 
-  security.sudo.extraRules = [
-    {
-      users = [ "snrx" ];
-      commands = [
-        {
-          command = "/run/current-system/sw/bin/nsenter --net=/var/run/netns/discord *";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
-
   environment.systemPackages = [
     (pkgs.writeShellScriptBin "discord-proxied" ''
       unset http_proxy https_proxy all_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
       unset ftp_proxy rsync_proxy no_proxy NO_PROXY RSYNC_PROXY FTP_PROXY
-      exec sudo -n /run/current-system/sw/bin/nsenter \
-        --net=/var/run/netns/discord \
-        /home/snrx/.nix-profile/bin/discord "$@"
+      export ALL_PROXY=socks5://127.0.0.1:10809
+      export all_proxy=socks5://127.0.0.1:10809
+      exec /home/snrx/.nix-profile/bin/discord "$@"
     '')
   ];
 }
