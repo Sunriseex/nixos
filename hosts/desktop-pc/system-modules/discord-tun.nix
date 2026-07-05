@@ -71,8 +71,7 @@ in {
 
     preStart = ''
       ${pkgs.iproute2}/bin/ip netns add discord 2>/dev/null || true
-      mkdir -p /etc/netns/discord
-      echo "nameserver 1.1.1.1" > /etc/netns/discord/resolv.conf
+      mkdir -p /run/discord-xray-tun
       cp ${tunConfig} /run/discord-xray-tun/config.json
     '';
 
