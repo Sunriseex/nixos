@@ -237,9 +237,22 @@ in
       win_x=$(echo "$prev_w $col $gap $off_x" | ${pkgs.coreutils}/bin/awk '{print int($1 + ($2 - 1) * $3 + $3 + $4)}')
       win_y=$(echo "$prev_h $row $gap $off_y" | ${pkgs.coreutils}/bin/awk '{print int($1 + ($2 - 1) * $3 + $3 + $4)}')
 
-      ${pkgs.grim}/bin/grim -o "$out_name" - | \
-        ${pkgs.imagemagick}/bin/convert - -crop "$win_w"x"$win_h"+"$win_x"+"$win_y" "$file"
-      ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
+      tmp_file=$(${pkgs.coreutils}/bin/mktemp --suffix=.png)
+      ${pkgs.grim}/bin/grim -o "$out_name" "$tmp_file"
+      if [ $? -ne 0 ]; then
+        ${pkgs.coreutils}/bin/rm -f "$tmp_file"
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "grim capture failed"
+        exit 1
+      fi
+
+      ${pkgs.imagemagick}/bin/convert "$tmp_file" -crop "$win_w"x"$win_h"+"$win_x"+"$win_y" "$file"
+      crop_rc=$?
+      ${pkgs.coreutils}/bin/rm -f "$tmp_file"
+      if [ $crop_rc -ne 0 ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "Crop failed"
+        exit 1
+      fi
+      ${pkgs.wl-clipboard}/bin/wl-copy --type image/png < "$file"
       ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
     '')
     (pkgs.writeShellScriptBin "screenshot-annotate" ''
