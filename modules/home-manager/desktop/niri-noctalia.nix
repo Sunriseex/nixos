@@ -199,6 +199,33 @@ in
     rsync
     wl-clipboard
     xwayland-satellite
+    (pkgs.writeShellScriptBin "screenshot-window" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+      win_data=$(${pkgs.niri}/bin/niri msg -j windows | ${pkgs.jq}/bin/jq '[.[] | select(.is_focused)] | first')
+      if [ -z "$win_data" ] || [ "$win_data" = "null" ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "No focused window"
+        exit 1
+      fi
+
+      out_name=$(echo "$win_data" | ${pkgs.jq}/bin/jq -r '.output')
+      win_x=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.geometry.x // 0')
+      win_y=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.geometry.y // 0')
+      win_w=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.geometry.width // 0')
+      win_h=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.geometry.height // 0')
+
+      if [ "$win_w" -eq 0 ] || [ "$win_h" -eq 0 ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "Could not get window geometry"
+        exit 1
+      fi
+
+      ${pkgs.grim}/bin/grim -o "$out_name" - | \
+        ${pkgs.imagemagick}/bin/convert - -crop "$win_w"x"$win_h"+"$win_x"+"$win_y" "$file"
+      ${pkgs.wl-clipboard}/bin/wl-copy < "$file"
+      ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
+    '')
     (pkgs.writeShellScriptBin "screenshot-annotate" ''
       dir="$HOME/Pictures/Screenshots"
       mkdir -p "$dir"
@@ -407,7 +434,7 @@ in
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
-    spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord-proxied"
+    spawn-at-startup "discord"
 
     binds {
         Mod+Return { spawn "ghostty"; }
@@ -467,6 +494,7 @@ in
 
         Print { spawn "screenshot-annotate"; }
         Shift+Print { spawn "screenshot-full"; }
+        Mod+Print { spawn "screenshot-window"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }
