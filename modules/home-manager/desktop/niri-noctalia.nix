@@ -216,26 +216,16 @@ in
         out_name=$(${pkgs.niri}/bin/niri msg -j focused-output | ${pkgs.jq}/bin/jq -r '.name')
       fi
 
-      col=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.pos_in_scrolling_layout[0]')
-      row=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.pos_in_scrolling_layout[1]')
       win_w=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_size[0]')
       win_h=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_size[1]')
-      off_x=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_offset_in_tile[0]')
-      off_y=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_offset_in_tile[1]')
 
       if [ "$win_w" -eq 0 ] || [ "$win_h" -eq 0 ]; then
         ${pkgs.libnotify}/bin/notify-send "Screenshot error" "Could not get window geometry"
         exit 1
       fi
 
-      gap=8
-      prev_h=$(echo "$all_win" | ${pkgs.jq}/bin/jq \
-        "[.[] | select(.output == \"$out_name\" and .layout.pos_in_scrolling_layout[0] == $col and .layout.pos_in_scrolling_layout[1] < $row) | .layout.tile_size[1]] | add // 0")
-      prev_w=$(echo "$all_win" | ${pkgs.jq}/bin/jq \
-        "[.[] | select(.output == \"$out_name\" and .layout.pos_in_scrolling_layout[0] < $col and .layout.pos_in_scrolling_layout[1] == $row) | .layout.tile_size[0]] | add // 0")
-
-      win_x=$(echo "$prev_w $col $gap $off_x" | ${pkgs.coreutils}/bin/awk '{print int($1 + ($2 - 1) * $3 + $3 + $4)}')
-      win_y=$(echo "$prev_h $row $gap $off_y" | ${pkgs.coreutils}/bin/awk '{print int($1 + ($2 - 1) * $3 + $3 + $4)}')
+      win_x=8
+      win_y=8
 
       tmp_file=$(${pkgs.coreutils}/bin/mktemp --suffix=.png)
       ${pkgs.grim}/bin/grim -o "$out_name" "$tmp_file"
