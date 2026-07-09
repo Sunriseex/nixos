@@ -199,6 +199,52 @@ in
     rsync
     wl-clipboard
     xwayland-satellite
+    (pkgs.writeShellScriptBin "screenshot-window" ''
+      dir="$HOME/Pictures/Screenshots"
+      mkdir -p "$dir"
+      file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+      all_win=$(${pkgs.niri}/bin/niri msg -j windows)
+      win_data=$(echo "$all_win" | ${pkgs.jq}/bin/jq '[.[] | select(.is_focused)] | first')
+      if [ -z "$win_data" ] || [ "$win_data" = "null" ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "No focused window"
+        exit 1
+      fi
+
+      out_name=$(echo "$win_data" | ${pkgs.jq}/bin/jq -r '.output // empty')
+      if [ -z "$out_name" ]; then
+        out_name=$(${pkgs.niri}/bin/niri msg -j focused-output | ${pkgs.jq}/bin/jq -r '.name')
+      fi
+
+      win_w=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_size[0]')
+      win_h=$(echo "$win_data" | ${pkgs.jq}/bin/jq '.layout.window_size[1]')
+
+      if [ "$win_w" -eq 0 ] || [ "$win_h" -eq 0 ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "Could not get window geometry"
+        exit 1
+      fi
+
+      win_x=8
+      win_y=8
+
+      tmp_file=$(${pkgs.coreutils}/bin/mktemp --suffix=.png)
+      ${pkgs.grim}/bin/grim -o "$out_name" "$tmp_file"
+      if [ $? -ne 0 ]; then
+        ${pkgs.coreutils}/bin/rm -f "$tmp_file"
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "grim capture failed"
+        exit 1
+      fi
+
+      ${pkgs.imagemagick}/bin/convert "$tmp_file" -crop "$win_w"x"$win_h"+"$win_x"+"$win_y" "$file"
+      crop_rc=$?
+      ${pkgs.coreutils}/bin/rm -f "$tmp_file"
+      if [ $crop_rc -ne 0 ]; then
+        ${pkgs.libnotify}/bin/notify-send "Screenshot error" "Crop failed"
+        exit 1
+      fi
+      ${pkgs.wl-clipboard}/bin/wl-copy --type image/png < "$file"
+      ${pkgs.libnotify}/bin/notify-send "Screenshot saved" "$(basename "$file")"
+    '')
     (pkgs.writeShellScriptBin "screenshot-annotate" ''
       dir="$HOME/Pictures/Screenshots"
       mkdir -p "$dir"
@@ -407,7 +453,7 @@ in
     spawn-at-startup "Telegram"
     spawn-at-startup "KeePassXC"
     spawn-at-startup "spotify"
-    spawn-at-startup "sh" "-c" "${pkgs.coreutils}/bin/sleep 20; exec discord-proxied"
+    spawn-at-startup "discord"
 
     binds {
         Mod+Return { spawn "ghostty"; }
@@ -467,6 +513,7 @@ in
 
         Print { spawn "screenshot-annotate"; }
         Shift+Print { spawn "screenshot-full"; }
+        Mod+Print { spawn "screenshot-window"; }
 
         XF86AudioRaiseVolume allow-when-locked=true { ${noctalia ''"volume" "increase"''}; }
         XF86AudioLowerVolume allow-when-locked=true { ${noctalia ''"volume" "decrease"''}; }

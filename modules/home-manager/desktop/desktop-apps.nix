@@ -52,6 +52,7 @@ in
     grim
     slurp
     wf-recorder
+    imagemagick
     protonplus
   ];
 
