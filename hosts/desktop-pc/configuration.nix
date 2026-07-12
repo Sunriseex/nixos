@@ -131,6 +131,7 @@
     vicinae
     libimobiledevice
     ifuse
+    firejail
   ];
 
   # Enabled services
