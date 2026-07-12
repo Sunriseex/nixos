@@ -92,7 +92,10 @@ let
     }];
   });
 in {
-  networking.firewall.allowedTCPPorts = [ 10808 ];
+  networking.firewall.interfaces.veth0 = {
+    allowedTCPPorts = [ 10808 ];
+    allowedUDPPorts = [ 10808 ];
+  };
 
   systemd.tmpfiles.rules = [
     "d /etc/netns/discord 0755 root root -"
