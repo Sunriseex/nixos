@@ -62,6 +62,12 @@ let
     outbounds = [{
       tag = "proxy";
       protocol = "vless";
+      mux = {
+        enabled = true;
+        concurrency = -1;
+        xudpConcurrency = 16;
+        xudpProxyUDP443 = "allow";
+      };
       settings = {
         vnext = [{
           address = "lv1node.soon.it";
