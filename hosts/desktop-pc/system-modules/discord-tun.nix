@@ -64,7 +64,7 @@ let
       protocol = "vless";
       settings = {
         vnext = [{
-          address = "lv1node.soon.it";
+          address = "nodesnrx.soon.it";
           port = 8443;
           users = [{
             id = "25788ada-ab4c-47ab-a00e-cbba5edb4a8e";
@@ -77,10 +77,10 @@ let
         network = "tcp";
         security = "reality";
         realitySettings = {
-          fingerprint = "firefox";
-          serverName = "lv1node.soon.it";
-          publicKey = "tpjqqi2FPGZ1nWHbRxka800TFg-J1_OMvJ04oUC4kkA";
-          shortId = "b0dbd85b5a3fb62a";
+          fingerprint = "safari";
+          serverName = "nodesnrx.soon.it";
+          publicKey = "L46LVuICgsrv4UJzYeg6oXV5CSeOA_vcUa2PLPRdrWk";
+          shortId = "60ceb44e655f6b9a";
         };
       };
     }];
