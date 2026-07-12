@@ -341,7 +341,7 @@ in
             natural-scroll
         }
 
-        focus-follows-mouse
+        focus-follows-mouse max-scroll-amount="0%"
     }
 
 
