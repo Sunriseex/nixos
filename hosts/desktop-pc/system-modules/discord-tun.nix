@@ -223,7 +223,11 @@ in {
       unset ftp_proxy rsync_proxy no_proxy NO_PROXY RSYNC_PROXY FTP_PROXY
       exec sudo -n ${pkgs.iproute2}/bin/ip netns exec discord \
         sudo -u snrx \
-        /home/snrx/.nix-profile/bin/discord "$@"
+        ${pkgs.coreutils}/bin/env \
+          XDG_RUNTIME_DIR="$XDG_RUNTIME_DIR" \
+          WAYLAND_DISPLAY="$WAYLAND_DISPLAY" \
+          DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" \
+          /home/snrx/.nix-profile/bin/discord --no-proxy-server "$@"
     '')
   ];
 }
